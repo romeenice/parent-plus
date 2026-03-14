@@ -1,6 +1,11 @@
 // src/services/firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { GOOGLE_API_KEY } from "../secrets.local";
+
+
+const apiKey = GOOGLE_API_KEY;
+
 
 const firebaseConfig = {
   apiKey: "YOUR_GOOGLE_API_KEY_HERE",

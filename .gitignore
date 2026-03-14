@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+secrets.local.js
+
+
 # Expo
 .expo/
 dist/
