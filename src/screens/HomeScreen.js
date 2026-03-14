@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.js
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -9,44 +8,50 @@ import {
   ScrollView,
 } from "react-native";
 import { getArticlesForAge } from "../services/articlesService";
-import { formatAgeMonths } from "../utils/formatAgeMonths";
-
+import { useCurrentChild } from "../hooks/useCurrentChild";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen({ navigation }) {
   const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { currentMonth, ageLabel, child, loading } = useCurrentChild("test-user-1");
 
   useEffect(() => {
     const load = async () => {
       try {
-        // тимчасово: вік дитини в місяцях
-        const currentAgeMonths = 1; // TODO: потім рахуємо з дати народження
-        const articles = await getArticlesForAge(currentAgeMonths);
-        // поки що беремо першу статтю для цього віку
+        if (!currentMonth) return;
+        const articles = await getArticlesForAge(currentMonth);
         if (articles.length > 0) {
           setArticle(articles[0]);
+        } else {
+          setArticle(null);
         }
       } catch (e) {
         console.log("Error loading article for month", e);
-      } finally {
-        setLoading(false);
       }
     };
 
     load();
-  }, []);
+  }, [currentMonth]);
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
+      <View style={[styles.screen, styles.center]}>
         <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!child) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <Text style={styles.emptyText}>No child profile yet.</Text>
       </View>
     );
   }
 
   if (!article) {
     return (
-      <View style={[styles.container, styles.center]}>
+      <View style={[styles.screen, styles.center]}>
         <Text style={styles.emptyText}>
           Поки що немає статей для цього віку.
         </Text>
@@ -54,76 +59,111 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
-  const currentMonth = article.month; // у тебе в документі є поле "month"
-
-  const openSection = (sectionKey) => {
+  const handleOpenSection = (sectionKey) => {
     navigation.navigate("ArticleDetails", {
       article,
       section: sectionKey,
     });
   };
 
-  const currentAgeMonths = 31; // тимчасово
-
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.headerBlock}>
-        <Text style={styles.greetingText}>This month</Text>
-        <Text style={styles.monthTitle}>{article.title}</Text>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {child.name ? child.name[0].toUpperCase() : "P"}
+            </Text>
+          </View>
+          <Text style={styles.appTitle}>Parents+</Text>
+        </View>
 
-        <Text style={styles.monthSubtitle}>
-          Your child is about {formatAgeMonths(currentAgeMonths)} old.
-        </Text>
+        <View style={styles.headerRight}>
+          <View style={styles.iconButton}>
+            <Text style={styles.iconText}>🔍</Text>
+          </View>
+          <View style={styles.iconButton}>
+            <Text style={styles.iconText}>🔔</Text>
+            <View style={styles.badgeDot} />
+          </View>
+        </View>
       </View>
 
-      <View style={styles.sectionsBlock}>
-        <SectionCard
-          icon="🧠"
-          title="Development"
-          description="Що дитина вчиться робити цього місяця."
-          onPress={() => openSection("development")}
-        />
-        <SectionCard
-          icon="💬"
-          title="Psychology"
-          description="Емоції, привʼязаність і поведінка."
-          onPress={() => openSection("psychology")}
-        />
-        <SectionCard
-          icon="🍎"
-          title="Health"
-          description="Сон, годування, здоровʼя та безпека."
-          onPress={() => openSection("health")}
-        />
-        <SectionCard
-          icon="🎲"
-          title="Play"
-          description="Ігри й активності для цього віку."
-          onPress={() => openSection("play")}
-        />
-      </View>
-    </ScrollView>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        {/* Month block */}
+        <View style={styles.monthBlock}>
+          <Text style={styles.monthLabel}>THIS MONTH</Text>
+          <Text style={styles.monthTitle}>
+            Month {article.month}:{" "}
+            <Text style={styles.monthTitleAccent}>{article.title.split(": ")[1] || ""}</Text>
+          </Text>
+          <Text style={styles.monthSubtitle}>
+            Your child is about {ageLabel} old.
+          </Text>
+        </View>
+
+        {/* Sections */}
+        <View style={styles.cardsBlock}>
+          <SectionCard
+            iconBg="#E0ECFF"
+            iconText="🧠"
+            title="Development"
+            description="What your baby is learning this month."
+            onPress={() => handleOpenSection("development")}
+          />
+          <SectionCard
+            iconBg="#E9D5FF"
+            iconText="💬"
+            title="Psychology"
+            description="Emotions, bonding and behavior."
+            onPress={() => handleOpenSection("psychology")}
+          />
+          <SectionCard
+            iconBg="#DCFCE7"
+            iconText="🍎"
+            title="Health"
+            description="Sleep, feeding, health and safety."
+            onPress={() => handleOpenSection("health")}
+          />
+          <SectionCard
+            iconBg="#FFEDD5"
+            iconText="🎲"
+            title="Play"
+            description="Games and activities for this age."
+            onPress={() => handleOpenSection("play")}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function SectionCard({ icon, title, description, onPress }) {
+function SectionCard({ iconBg, iconText, title, description, onPress }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Text style={styles.cardIcon}>{icon}</Text>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+      <View style={[styles.cardIconWrapper, { backgroundColor: iconBg }]}>
+        <Text style={styles.cardIcon}>{iconText}</Text>
+      </View>
       <View style={styles.cardTextBlock}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardDescription}>{description}</Text>
       </View>
+      <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   );
 }
 
+const PRIMARY = "#EE2B5B";
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    paddingTop: 48,
-    paddingHorizontal: 16,
-    backgroundColor: "#F5F5F7",
+    backgroundColor: "#F8F6F6",
+    paddingTop: 16,
   },
   center: {
     justifyContent: "center",
@@ -131,56 +171,143 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
+    color: "#64748B",
     textAlign: "center",
+    paddingHorizontal: 24,
   },
-  headerBlock: {
-    marginBottom: 24,
+
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  greetingText: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 4,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 9999,
+    backgroundColor: "rgba(238, 43, 91, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    color: PRIMARY,
+    fontWeight: "700",
+  },
+  appTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 9999,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    position: "relative",
+  },
+  iconText: {
+    fontSize: 18,
+  },
+  badgeDot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 9999,
+    backgroundColor: PRIMARY,
+  },
+
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  monthBlock: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  monthLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    color: PRIMARY,
   },
   monthTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
+    marginTop: 6,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  monthTitleAccent: {
+    color: PRIMARY,
   },
   monthSubtitle: {
+    marginTop: 6,
     fontSize: 14,
-    color: "#555",
+    color: "#64748B",
   },
-  sectionsBlock: {
-    marginTop: 8,
+
+  cardsBlock: {
+    gap: 12,
   },
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
     alignItems: "center",
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    marginBottom: 4,
+  },
+  cardIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   cardIcon: {
-    fontSize: 26,
-    marginRight: 12,
+    fontSize: 24,
   },
   cardTextBlock: {
     flex: 1,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 4,
   },
   cardDescription: {
     fontSize: 14,
-    color: "#666",
+    color: "#64748B",
+  },
+  chevron: {
+    fontSize: 24,
+    color: "#CBD5E1",
+    marginLeft: 8,
   },
 });

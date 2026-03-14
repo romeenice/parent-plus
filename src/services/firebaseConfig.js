@@ -1,14 +1,11 @@
 // src/services/firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { GOOGLE_API_KEY } from "../secrets.local";
-
-
-const apiKey = GOOGLE_API_KEY;
+import { GOOGLE_API_KEY } from "../../secrets.local";
 
 
 const firebaseConfig = {
-  apiKey: "YOUR_GOOGLE_API_KEY_HERE",
+  apiKey: GOOGLE_API_KEY,
   authDomain: "parents-plus-9eeda.firebaseapp.com",
   projectId: "parents-plus-9eeda",
   storageBucket: "parents-plus-9eeda.firebasestorage.app",
