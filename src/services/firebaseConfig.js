@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAtBL75mBZuvgHWUyVrzbMkd9vyy_sT9KA",
+  apiKey: "YOUR_GOOGLE_API_KEY_HERE",
   authDomain: "parents-plus-9eeda.firebaseapp.com",
   projectId: "parents-plus-9eeda",
   storageBucket: "parents-plus-9eeda.firebasestorage.app",
