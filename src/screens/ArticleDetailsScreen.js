@@ -1,34 +1,38 @@
+// src/screens/ArticleDetailsScreen.js
 import React from "react";
 import { ScrollView, Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 const SECTION_CONFIG = {
-  development: { label: "🧠 Development", field: "development" },
-  psychology: { label: "💬 Psychology", field: "psychology" },
-  health: { label: "🍎 Health", field: "health" },
-  play: { label: "🎲 Play", field: "play" },
+  development: { labelKey: "article_section_development", field: "development" },
+  psychology: { labelKey: "article_section_psychology", field: "psychology" },
+  health: { labelKey: "article_section_health", field: "health" },
+  play: { labelKey: "article_section_play", field: "play" },
 };
 
 export default function ArticleDetailsScreen({ route }) {
+  const { t } = useTranslation();
   const { article, section } = route.params || {};
 
   if (!article) {
     return (
       <SafeAreaView style={styles.fallback} edges={["top"]}>
-        <Text style={styles.fallbackText}>No article data.</Text>
+        <Text style={styles.fallbackText}>{t("article_no_data")}</Text>
       </SafeAreaView>
     );
   }
 
   const renderSection = (key) => {
     const config = SECTION_CONFIG[key];
-    const text = article[config.field];
+    if (!config) return null;
 
+    const text = article[config.field];
     if (!text) return null;
 
     return (
       <View key={key} style={styles.sectionBlock}>
-        <Text style={styles.sectionTitle}>{config.label}</Text>
+        <Text style={styles.sectionTitle}>{t(config.labelKey)}</Text>
         <Text style={styles.sectionText}>{text}</Text>
       </View>
     );

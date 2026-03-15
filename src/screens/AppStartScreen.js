@@ -1,9 +1,12 @@
+// src/screens/AppStartScreen.js
 import React, { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 export default function AppStartScreen({ navigation }) {
+  const { t } = useTranslation();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function AppStartScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ActivityIndicator size="large" />
-      <Text style={styles.text}>Loading...</Text>
+      <Text style={styles.text}>{t("app_start_loading")}</Text>
     </SafeAreaView>
   );
 }

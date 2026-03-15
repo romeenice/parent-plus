@@ -16,7 +16,7 @@ import { formatAgeMonths } from "../utils/formatAgeMonths";
 
 const CURRENT_CHILD_KEY = "current_child_id";
 
-export function useCurrentChild(userId = "test-user-1") {
+export function useCurrentChild(userId ) {
   const [children, setChildren] = useState([]);
   const [currentChildId, setCurrentChildIdState] = useState(null);
   const [child, setChild] = useState(null);
@@ -59,11 +59,8 @@ export function useCurrentChild(userId = "test-user-1") {
         setLoading(true);
         const db = getFirestore();
         const childrenRef = collection(db, "children");
-
-        // поки без userId-фільтра
-        // const q = query(childrenRef, where("userId", "==", userId));
-        // const snap = await getDocs(q);
-        const snap = await getDocs(childrenRef);
+        const q = query(childrenRef, where("userId", "==", userId));
+        const snap = await getDocs(q);
 
         const list = snap.docs.map((d) => ({
           id: d.id,

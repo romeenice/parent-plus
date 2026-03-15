@@ -1,3 +1,4 @@
+// src/screens/HomeScreen.js
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -8,12 +9,20 @@ import {
   ScrollView,
 } from "react-native";
 import { getArticlesForAge } from "../services/articlesService";
+import { auth } from "../services/firebaseConfig";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+
+const PRIMARY = "#EE2B5B";
 
 export default function HomeScreen({ navigation }) {
+  const { t } = useTranslation();
   const [article, setArticle] = useState(null);
-  const { currentMonth, ageLabel, child, loading } = useCurrentChild("test-user-1");
+
+  const userId = auth.currentUser?.uid;
+
+  const { currentMonth, ageLabel, child, loading } = useCurrentChild(userId);
 
   useEffect(() => {
     const load = async () => {
@@ -44,7 +53,15 @@ export default function HomeScreen({ navigation }) {
   if (!child) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.emptyText}>No child profile yet.</Text>
+        <Text style={styles.emptyText}>{t("home_no_child_text")}</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16 }}
+          onPress={() => navigation.navigate("AddChild")}
+        >
+          <Text style={{ color: PRIMARY, fontWeight: "700" }}>
+            {t("home_add_first_child_button")}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -53,7 +70,7 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={[styles.screen, styles.center]}>
         <Text style={styles.emptyText}>
-          Поки що немає статей для цього віку.
+          {t("home_no_articles_for_age")}
         </Text>
       </View>
     );
@@ -96,13 +113,15 @@ export default function HomeScreen({ navigation }) {
       >
         {/* Month block */}
         <View style={styles.monthBlock}>
-          <Text style={styles.monthLabel}>THIS MONTH</Text>
+          <Text style={styles.monthLabel}>{t("home_this_month_label")}</Text>
           <Text style={styles.monthTitle}>
-            Month {article.month}:{" "}
-            <Text style={styles.monthTitleAccent}>{article.title.split(": ")[1] || ""}</Text>
+            {t("home_month_title_prefix", { month: article.month })}{" "}
+            <Text style={styles.monthTitleAccent}>
+              {article.title.split(": ")[1] || ""}
+            </Text>
           </Text>
           <Text style={styles.monthSubtitle}>
-            Your child is about {ageLabel} old.
+            {t("home_month_subtitle", { age: ageLabel })}
           </Text>
         </View>
 
@@ -111,29 +130,29 @@ export default function HomeScreen({ navigation }) {
           <SectionCard
             iconBg="#E0ECFF"
             iconText="🧠"
-            title="Development"
-            description="What your baby is learning this month."
+            title={t("home_section_development_title")}
+            description={t("home_section_development_description")}
             onPress={() => handleOpenSection("development")}
           />
           <SectionCard
             iconBg="#E9D5FF"
             iconText="💬"
-            title="Psychology"
-            description="Emotions, bonding and behavior."
+            title={t("home_section_psychology_title")}
+            description={t("home_section_psychology_description")}
             onPress={() => handleOpenSection("psychology")}
           />
           <SectionCard
             iconBg="#DCFCE7"
             iconText="🍎"
-            title="Health"
-            description="Sleep, feeding, health and safety."
+            title={t("home_section_health_title")}
+            description={t("home_section_health_description")}
             onPress={() => handleOpenSection("health")}
           />
           <SectionCard
             iconBg="#FFEDD5"
             iconText="🎲"
-            title="Play"
-            description="Games and activities for this age."
+            title={t("home_section_play_title")}
+            description={t("home_section_play_description")}
             onPress={() => handleOpenSection("play")}
           />
         </View>
@@ -156,8 +175,6 @@ function SectionCard({ iconBg, iconText, title, description, onPress }) {
     </TouchableOpacity>
   );
 }
-
-const PRIMARY = "#EE2B5B";
 
 const styles = StyleSheet.create({
   screen: {

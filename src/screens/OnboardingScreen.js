@@ -2,8 +2,11 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 export default function OnboardingScreen({ navigation }) {
+  const { t } = useTranslation();
+
   const handleContinue = () => {
     navigation.navigate("AddChild");
   };
@@ -19,7 +22,6 @@ export default function OnboardingScreen({ navigation }) {
       <View style={styles.illustrationWrapper}>
         <View style={styles.blurOuter} />
         <View style={styles.imageCard}>
-          {/* Постав свій локальний ресурс */}
           <Image
             source={require("../../assets/12.png")}
             style={styles.babyImage}
@@ -31,20 +33,24 @@ export default function OnboardingScreen({ navigation }) {
       {/* Текст під картинкою */}
       <View style={styles.textBlock}>
         <Text style={styles.title}>
-          Every step{"\n"}
-          <Text style={styles.titleAccent}>together.</Text>
+          {t("onboarding_title_line1")}
+          {"\n"}
+          <Text style={styles.titleAccent}>
+            {t("onboarding_title_accent")}
+          </Text>
         </Text>
 
         <Text style={styles.subtitle}>
-          Simple monthly tips and tasks for{"\n"}
-          your baby up to 3 years.
+          {t("onboarding_subtitle")}
         </Text>
       </View>
 
       {/* Кнопка + індикатор сторінок */}
       <View style={styles.bottomBlock}>
         <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>
+            {t("onboarding_continue_button")}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.dotsRow}>
@@ -157,5 +163,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  dotActive: {
+    width: 16,
+    height: 8,
+    borderRadius: 9999,
+    backgroundColor: "#EE2B5B",
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 9999,
+    backgroundColor: "#E2E8F0",
+  },
+  blurSmall: {
+    position: "absolute",
+    top: 120,
+    right: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 9999,
+    backgroundColor: "rgba(238, 43, 91, 0.06)",
+  },
+  blurBig: {
+    position: "absolute",
+    bottom: -80,
+    left: -80,
+    width: 220,
+    height: 220,
+    borderRadius: 9999,
+    backgroundColor: "rgba(238, 43, 91, 0.08)",
+  },
 });
-

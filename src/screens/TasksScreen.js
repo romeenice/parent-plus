@@ -1,3 +1,4 @@
+// src/screens/TasksScreen.js
 import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
@@ -5,57 +6,31 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { useCurrentChild } from "../hooks/useCurrentChild";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 
-
-// тимчасові таски
-const TASKS = [
-  {
-    id: "month1-development",
-    month: 1,
-    category: "Daily activity",
-    title: "Tummy time 3–5 minutes",
-    description:
-      "Help your baby strengthen neck and shoulder muscles.",
-    status: "not_started",
-  },
-  {
-    id: "month1-psychology",
-    month: 1,
-    category: "Motor skills",
-    title: "Practice sitting",
-    description:
-      "Support baby with pillows or your lap for balance.",
-    status: "in_progress",
-  },
-  {
-    id: "month1-health",
-    month: 1,
-    category: "Cognitive",
-    title: "Read a board book",
-    description: "Point to pictures and name common objects.",
-    status: "done",
-  },
-  {
-    id: "month1-play",
-    month: 1,
-    category: "Social",
-    title: "Mirror play",
-    description:
-      "Let baby discover their reflection for social development.",
-    status: "not_started",
-  },
-];
-
-const STATUS_OPTIONS = [
-  { value: "not_started", label: "Not started" },
-  { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
-];
+import { useCurrentChild } from "../hooks/useCurrentChild";
+import { auth, db } from "../services/firebaseConfig";
+import { formatAgeMonths } from "../utils/formatAgeMonths";
+import { useTranslation } from "react-i18next";
 
 const PRIMARY = "#EE2B5B";
+
+const STATUS_OPTIONS = [
+  { value: "not_started", labelKey: "tasks_status_not_started" },
+  { value: "in_progress", labelKey: "tasks_status_in_progress" },
+  { value: "done", labelKey: "tasks_status_done" },
+];
 
 const getStatusStyle = (status) => {
   switch (status) {
@@ -85,52 +60,135 @@ const getStatusStyle = (status) => {
 };
 
 export default function TasksScreen() {
-  const { currentMonth, ageLabel, child, loading } = useCurrentChild("test-user-1");
-
-  const initialTasks = useMemo(
-    () =>
-      currentMonth
-        ? TASKS.filter((t) => t.month === currentMonth)
-        : [],
-    [currentMonth]
+  const { t } = useTranslation();
+  const userId = auth.currentUser?.uid;
+  const { currentMonth, child, loading: childLoading } = useCurrentChild(
+    userId
   );
 
-  const [tasksState, setTasksState] = useState(initialTasks);
+  const [tasksState, setTasksState] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [loadingTasks, setLoadingTasks] = useState(true);
 
+  // Load tasks templates and user statuses
   useEffect(() => {
-    setTasksState(initialTasks);
-  }, [initialTasks]);
+    const loadTasks = async () => {
+      if (!currentMonth || !userId) {
+        setTasksState([]);
+        setLoadingTasks(false);
+        return;
+      }
 
-  const updateTaskStatus = (taskId, newStatus) => {
+      try {
+        setLoadingTasks(true);
+
+        // 1) Load templates for this month
+        const tasksRef = collection(db, "tasks");
+        const qTasks = query(tasksRef, where("month", "==", currentMonth));
+        const snapTasks = await getDocs(qTasks);
+
+        const templates = [];
+        snapTasks.forEach((d) => {
+          templates.push({ id: d.id, ...d.data() });
+        });
+
+        // 2) Load user statuses for these taskIds
+        const userTasksRef = collection(db, "users", userId, "tasks");
+        const result = [];
+
+        for (const tTask of templates) {
+          const userTaskDocRef = doc(userTasksRef, tTask.id);
+          const userTaskSnap = await getDoc(userTaskDocRef);
+
+          let status = "not_started";
+          if (userTaskSnap.exists()) {
+            const data = userTaskSnap.data();
+            if (data.status) status = data.status;
+          }
+
+          result.push({ ...tTask, status });
+        }
+
+        setTasksState(result);
+      } catch (e) {
+        console.log("Error loading tasks for month", currentMonth, e);
+        setTasksState([]);
+      } finally {
+        setLoadingTasks(false);
+      }
+    };
+
+    loadTasks();
+  }, [currentMonth, userId]);
+
+  const updateTaskStatus = async (taskId, newStatus) => {
+    if (!userId) return;
+
+    // 1) Update local state
     setTasksState((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, status: newStatus } : t
-      )
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
     setOpenDropdownId(null);
+
+    // 2) Save to Firestore
+    try {
+      const userTaskRef = doc(db, "users", userId, "tasks", taskId);
+      await setDoc(
+        userTaskRef,
+        {
+          status: newStatus,
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      console.log("Error updating task status", e);
+    }
+  };
+
+  const activeTasks = useMemo(
+    () => tasksState.filter((t) => t.status !== "done"),
+    [tasksState]
+  );
+
+  const doneTasks = useMemo(
+    () => tasksState.filter((t) => t.status === "done"),
+    [tasksState]
+  );
+
+  const allTasks = useMemo(
+    () => [...activeTasks, ...doneTasks],
+    [activeTasks, doneTasks]
+  );
+
+  const allDone =
+    tasksState.length > 0 &&
+    tasksState.every((t) => t.status === "done");
+
+  const renderSeparator = () => {
+    if (doneTasks.length === 0 || activeTasks.length === 0) return null;
+
+    return (
+      <View style={styles.separatorRow}>
+        <View style={styles.separatorLine} />
+        <Text style={styles.separatorText}>
+          {t("tasks_previous_tasks")}
+        </Text>
+        <View style={styles.separatorLine} />
+      </View>
+    );
   };
 
   const renderTask = ({ item }) => {
     const statusCfg = getStatusStyle(item.status);
     const isOpen = openDropdownId === item.id;
-
     const isDone = item.status === "done";
 
     return (
-      <View
-        style={[
-          styles.taskCard,
-          isDone && styles.taskCardDone,
-        ]}
-      >
+      <View style={[styles.taskCard, isDone && styles.taskCardDone]}>
         <View style={styles.taskHeader}>
           <View style={{ flex: 1 }}>
             <Text
-              style={[
-                styles.taskTitle,
-                isDone && styles.taskTitleDone,
-              ]}
+              style={[styles.taskTitle, isDone && styles.taskTitleDone]}
             >
               {item.title}
             </Text>
@@ -179,7 +237,11 @@ export default function TasksScreen() {
                 {
                   STATUS_OPTIONS.find(
                     (o) => o.value === item.status
-                  )?.label
+                  ) && t(
+                    STATUS_OPTIONS.find(
+                      (o) => o.value === item.status
+                    ).labelKey
+                  )
                 }
               </Text>
             </TouchableOpacity>
@@ -211,7 +273,8 @@ export default function TasksScreen() {
                         ]}
                         numberOfLines={1}
                       >
-                        {optionCfg.icon} {option.label}
+                        {optionCfg.icon}{" "}
+                        {t(option.labelKey)}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -224,10 +287,11 @@ export default function TasksScreen() {
     );
   };
 
-  if (loading) {
+  // Loading states
+  if (childLoading || loadingTasks) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
@@ -235,19 +299,57 @@ export default function TasksScreen() {
   if (!child) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text>No child profile yet.</Text>
+        <Text>{t("tasks_no_child")}</Text>
       </View>
     );
   }
 
+  if (!tasksState || tasksState.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.circleIcon}>
+              <Text style={{ fontSize: 20 }}>←</Text>
+            </View>
+
+            <View style={styles.logoRow}>
+              <View style={styles.logoCircle}>
+                <Text style={{ color: PRIMARY }}>👶</Text>
+              </View>
+              <Text style={styles.logoText}>Parents+</Text>
+            </View>
+          </View>
+
+          <View style={styles.headerRight}>
+            <View style={styles.circleIcon}>
+              <Text style={{ fontSize: 18 }}>⋯</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.headerTextBlock}>
+          <Text style={styles.headerTitle}>
+            {t("tasks_header_title", {
+              age: formatAgeMonths(currentMonth),
+            })}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {t("tasks_empty_subtitle")}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView  style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.circleIcon}>
+          <View style={styles.circleIcon}>
             <Text style={{ fontSize: 20 }}>←</Text>
-          </TouchableOpacity>
+          </View>
 
           <View style={styles.logoRow}>
             <View style={styles.logoCircle}>
@@ -266,20 +368,26 @@ export default function TasksScreen() {
 
       <View style={styles.headerTextBlock}>
         <Text style={styles.headerTitle}>
-          Tasks for Month {currentMonth || 1}
+          {t("tasks_header_title", {
+            age: formatAgeMonths(currentMonth),
+          })}
         </Text>
         <Text style={styles.headerSubtitle}>
-          Focusing on small daily actions for your child&apos;s growth.
+          {allDone
+            ? t("tasks_all_done_subtitle")
+            : t("tasks_focus_subtitle")}
         </Text>
       </View>
 
+      {renderSeparator()}
+
       <FlatList
-        data={tasksState}
+        data={allTasks}
         keyExtractor={(item) => item.id}
         renderItem={renderTask}
         contentContainerStyle={styles.listContent}
       />
-    </SafeAreaView >
+    </SafeAreaView>
   );
 }
 
@@ -446,5 +554,24 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 13,
     color: "#475569",
+  },
+
+  separatorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E2E8F0",
+  },
+  separatorText: {
+    marginHorizontal: 8,
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "500",
   },
 });

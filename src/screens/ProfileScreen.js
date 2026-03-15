@@ -10,11 +10,26 @@ import {
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+
 import { useCurrentChild } from "../hooks/useCurrentChild";
+import { signOut } from "firebase/auth";
+import { auth, db } from "../services/firebaseConfig";
+import i18n from "../i18n";
 
 const PRIMARY = "#EE2B5B";
 
+const LANGUAGE_OPTIONS = [
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "uk", label: "Українська", flag: "🇺🇦" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+];
+
 export default function ProfileScreen({ navigation }) {
+  const { t } = useTranslation();
+  const userId = auth.currentUser?.uid;
+
   const {
     child,
     children = [],
@@ -23,14 +38,84 @@ export default function ProfileScreen({ navigation }) {
     setCurrentChildId,
     deleteChild,
     loading,
-  } = useCurrentChild("test-user-1");
+  } = useCurrentChild(userId);
 
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [selectedLanguage, setSelectedLanguage] = React.useState("en");
+  const [languageOpen, setLanguageOpen] = React.useState(false);
+
+  const currentLanguage = LANGUAGE_OPTIONS.find(
+    (l) => l.code === selectedLanguage
+  );
+
+  // Load language from Firestore
+  React.useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        if (!userId) return;
+        const userRef = doc(db, "users", userId);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.language) {
+            setSelectedLanguage(data.language);
+          }
+        }
+      } catch (e) {
+        console.log("Error loading user language", e);
+      }
+    };
+
+    loadLanguage();
+  }, [userId]);
+
+  const handleLanguagePress = (code) => {
+    if (code === selectedLanguage) {
+      setLanguageOpen(false);
+      return;
+    }
+
+    Alert.alert(
+      t("language_change_title"),
+      t("language_change_message"),
+      [
+        { text: t("common_cancel"), style: "cancel" },
+        {
+          text: t("language_change_confirm"),
+          style: "destructive",
+          onPress: () => confirmLanguageChange(code),
+        },
+      ]
+    );
+  };
+
+  const confirmLanguageChange = async (code) => {
+    setSelectedLanguage(code);
+    setLanguageOpen(false);
+
+    try {
+      if (!userId) return;
+      const userRef = doc(db, "users", userId);
+      await setDoc(userRef, { language: code }, { merge: true });
+
+      i18n.changeLanguage(code);
+    } catch (e) {
+      console.log("Error saving language", e);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.log("Logout error", e);
+    }
+  };
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.screen, styles.center]} edges={["top"]}>
-        <Text>Loading...</Text>
+        <Text>{t("common_loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -50,12 +135,14 @@ export default function ProfileScreen({ navigation }) {
 
   const handleDeleteChild = (childToDelete) => {
     Alert.alert(
-      "Delete child",
-      `Are you sure you want to delete ${childToDelete.name || "this child"}?`,
+      t("delete_child_title"),
+      t("delete_child_message", {
+        name: childToDelete.name || t("delete_child_fallback_name"),
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common_cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete_child_confirm"),
           style: "destructive",
           onPress: () => deleteChild(childToDelete.id),
         },
@@ -64,10 +151,9 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePremiumPress = () => {
-    // поки заглушка
     Alert.alert(
-      "Premium+ coming soon",
-      "Unlock extra content, expert tips and more. Stay tuned!"
+      t("premium_title"),
+      t("premium_message")
     );
   };
 
@@ -75,7 +161,7 @@ export default function ProfileScreen({ navigation }) {
     <SafeAreaView style={styles.screen} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t("profile_title")}</Text>
       </View>
 
       <ScrollView
@@ -94,14 +180,18 @@ export default function ProfileScreen({ navigation }) {
             <View style={{ flex: 1, alignItems: "center" }}>
               <Text style={styles.childName}>{child.name}</Text>
               <Text style={styles.childSubtitle}>
-                {ageLabel ? `${ageLabel} old` : "Age not set yet."}
+                {ageLabel
+                  ? t("current_child_age", { age: ageLabel })
+                  : t("current_child_age_not_set")}
               </Text>
 
               <TouchableOpacity
                 style={styles.addAnotherButton}
                 onPress={handleAddChild}
               >
-                <Text style={styles.addAnotherText}>Add another child</Text>
+                <Text style={styles.addAnotherText}>
+                  {t("add_another_child")}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -116,7 +206,7 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Children list */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Children</Text>
+          <Text style={styles.sectionTitle}>{t("children_section_title")}</Text>
 
           {children.map((c) => {
             const isActive = c.id === currentChildId;
@@ -140,7 +230,7 @@ export default function ProfileScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.childRowName}>{c.name}</Text>
                     <Text style={styles.childRowSubtitle}>
-                      {c.birthDate || "Birth date not set"}
+                      {c.birthDate || t("birthdate_not_set")}
                     </Text>
                   </View>
                   {isActive && <Text style={styles.activeDot}>●</Text>}
@@ -150,7 +240,7 @@ export default function ProfileScreen({ navigation }) {
                   onPress={() => handleDeleteChild(c)}
                   style={styles.deleteButton}
                 >
-                  <Text style={styles.deleteText}>Delete</Text>
+                  <Text style={styles.deleteText}>{t("delete_child_button")}</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -159,14 +249,16 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Settings / My Profile */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>{t("settings_section_title")}</Text>
 
           {/* Notifications */}
           <View style={styles.settingsRow}>
             <View>
-              <Text style={styles.settingsTitle}>Notifications</Text>
+              <Text style={styles.settingsTitle}>
+                {t("settings_notifications_title")}
+              </Text>
               <Text style={styles.settingsSubtitle}>
-                Daily reminders & updates
+                {t("settings_notifications_subtitle")}
               </Text>
             </View>
             <Switch
@@ -180,16 +272,72 @@ export default function ProfileScreen({ navigation }) {
           {/* App Theme */}
           <TouchableOpacity style={styles.settingsRow}>
             <View>
-              <Text style={styles.settingsTitle}>App Theme</Text>
-              <Text style={styles.settingsSubtitle}>Pastel Pink</Text>
+              <Text style={styles.settingsTitle}>
+                {t("settings_theme_title")}
+              </Text>
+              <Text style={styles.settingsSubtitle}>
+                {t("settings_theme_value")}
+              </Text>
             </View>
             <Text style={styles.chevron}>{">"}</Text>
           </TouchableOpacity>
 
+          {/* Language */}
+          <View>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={() => setLanguageOpen((prev) => !prev)}
+            >
+              <View>
+                <Text style={styles.settingsTitle}>
+                  {t("settings_language_title")}
+                </Text>
+                <Text style={styles.settingsSubtitle}>
+                  {currentLanguage
+                    ? `${currentLanguage.flag} ${currentLanguage.label}`
+                    : t("settings_language_placeholder")}
+                </Text>
+              </View>
+              <Text style={styles.chevron}>
+                {languageOpen ? "˄" : "˅"}
+              </Text>
+            </TouchableOpacity>
+
+            {languageOpen && (
+              <View style={styles.languageDropdown}>
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const isActive = lang.code === selectedLanguage;
+                  return (
+                    <TouchableOpacity
+                      key={lang.code}
+                      style={[
+                        styles.languageOption,
+                        isActive && styles.languageOptionActive,
+                      ]}
+                      onPress={() => handleLanguagePress(lang.code)}
+                    >
+                      <Text style={styles.languageFlag}>{lang.flag}</Text>
+                      <Text
+                        style={[
+                          styles.languageLabel,
+                          isActive && styles.languageLabelActive,
+                        ]}
+                      >
+                        {lang.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
           {/* Help & Support */}
           <TouchableOpacity style={styles.settingsRow}>
             <View>
-              <Text style={styles.settingsTitle}>Help & Support</Text>
+              <Text style={styles.settingsTitle}>
+                {t("settings_help_title")}
+              </Text>
             </View>
             <Text style={styles.chevron}>{">"}</Text>
           </TouchableOpacity>
@@ -201,10 +349,10 @@ export default function ProfileScreen({ navigation }) {
           >
             <View>
               <Text style={[styles.settingsTitle, { color: PRIMARY }]}>
-                Premium+
+                {t("settings_premium_title")}
               </Text>
               <Text style={styles.settingsSubtitle}>
-                Extra content & features
+                {t("settings_premium_subtitle")}
               </Text>
             </View>
             <Text style={[styles.chevron, { color: PRIMARY }]}>{">"}</Text>
@@ -212,8 +360,8 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Log out */}
-        <TouchableOpacity style={styles.logoutRow}>
-          <Text style={styles.logoutText}>Log Out</Text>
+        <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
+          <Text style={styles.logoutText}>{t("logout_button")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -410,6 +558,36 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: 18,
     color: "#CBD5F5",
+  },
+
+  languageDropdown: {
+    marginTop: 4,
+    borderRadius: 16,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    overflow: "hidden",
+  },
+  languageOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  languageOptionActive: {
+    backgroundColor: "#EFF6FF",
+  },
+  languageFlag: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  languageLabel: {
+    fontSize: 14,
+    color: "#0F172A",
+  },
+  languageLabelActive: {
+    fontWeight: "700",
+    color: PRIMARY,
   },
 
   // logout

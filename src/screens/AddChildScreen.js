@@ -1,5 +1,5 @@
 // src/screens/AddChildScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -17,10 +17,15 @@ import {
 } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+
+import { auth } from "../services/firebaseConfig";
 
 const PRIMARY = "#EE2B5B";
 
 export default function AddChildScreen({ navigation, route }) {
+  const { t } = useTranslation();
+
   const params = route?.params || {};
   const isEdit = params.mode === "edit";
   const editingChild = params.child || null;
@@ -60,11 +65,17 @@ export default function AddChildScreen({ navigation, route }) {
         });
       } else {
         const childrenRef = collection(db, "children");
+
+        const user = auth.currentUser;
+        if (!user) {
+          console.log("No auth user");
+          return;
+        }
         await addDoc(childrenRef, {
           name,
           birthDate,
           gender: gender || null,
-          userId: "test-user-1",
+          userId: user.uid,
           createdAt: serverTimestamp(),
         });
       }
@@ -92,13 +103,13 @@ export default function AddChildScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {isEdit ? "Edit Child" : "Add Child"}
+          {isEdit ? t("add_child_header_edit") : t("add_child_header_add")}
         </Text>
       </View>
 
-      {/* Step + progress (можеш пізніше налаштувати під онбординг) */}
+      {/* Step + progress */}
       <View style={styles.stepBlock}>
-        <Text style={styles.stepText}>Step 2 of 5</Text>
+        <Text style={styles.stepText}>{t("add_child_step_text")}</Text>
         <View style={styles.progressBg}>
           <View style={styles.progressFill} />
         </View>
@@ -107,10 +118,12 @@ export default function AddChildScreen({ navigation, route }) {
       {/* Hero text */}
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>
-          {isEdit ? "Update your child details" : "Tell us about your child"}
+          {isEdit
+            ? t("add_child_hero_title_edit")
+            : t("add_child_hero_title_add")}
         </Text>
         <Text style={styles.heroSubtitle}>
-          This helps us personalize your parenting journey.
+          {t("add_child_hero_subtitle")}
         </Text>
       </View>
 
@@ -118,10 +131,10 @@ export default function AddChildScreen({ navigation, route }) {
       <View style={styles.form}>
         {/* Name */}
         <View style={styles.field}>
-          <Text style={styles.label}>Child&apos;s Name</Text>
+          <Text style={styles.label}>{t("add_child_name_label")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter name"
+            placeholder={t("add_child_name_placeholder")}
             value={name}
             onChangeText={setName}
           />
@@ -129,7 +142,7 @@ export default function AddChildScreen({ navigation, route }) {
 
         {/* Gender */}
         <View style={styles.field}>
-          <Text style={styles.label}>Gender</Text>
+          <Text style={styles.label}>{t("add_child_gender_label")}</Text>
           <View style={styles.genderRow}>
             <TouchableOpacity
               style={[
@@ -144,7 +157,7 @@ export default function AddChildScreen({ navigation, route }) {
                   gender === "male" && styles.genderTextActive,
                 ]}
               >
-                ♂ Male
+                ♂ {t("add_child_gender_male")}
               </Text>
             </TouchableOpacity>
 
@@ -161,7 +174,7 @@ export default function AddChildScreen({ navigation, route }) {
                   gender === "female" && styles.genderTextActive,
                 ]}
               >
-                ♀ Female
+                ♀ {t("add_child_gender_female")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -169,7 +182,7 @@ export default function AddChildScreen({ navigation, route }) {
 
         {/* Birth date */}
         <View style={styles.field}>
-          <Text style={styles.label}>Birth Date</Text>
+          <Text style={styles.label}>{t("add_child_birthdate_label")}</Text>
 
           <TouchableOpacity
             style={styles.datePickerButton}
@@ -181,7 +194,7 @@ export default function AddChildScreen({ navigation, route }) {
                 !birthDate && { color: "#94A3B8" },
               ]}
             >
-              {birthDate || "Select birth date"}
+              {birthDate || t("add_child_birthdate_placeholder")}
             </Text>
           </TouchableOpacity>
 
@@ -208,16 +221,16 @@ export default function AddChildScreen({ navigation, route }) {
         >
           <Text style={styles.primaryButtonText}>
             {saving
-              ? "Saving..."
+              ? t("add_child_primary_saving")
               : isEdit
-              ? "Save changes"
-              : "Save and continue"}
+              ? t("add_child_primary_save_changes")
+              : t("add_child_primary_save_continue")}
           </Text>
         </TouchableOpacity>
 
         {!isEdit && (
           <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip for now</Text>
+            <Text style={styles.skipText}>{t("add_child_skip")}</Text>
           </TouchableOpacity>
         )}
       </View>
