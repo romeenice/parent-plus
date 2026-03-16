@@ -161,7 +161,9 @@ tasks_all_done_subtitle:
   "All tasks for this week are completed. Check back next week for new tasks or unlock more with Premium.",
 tasks_focus_subtitle:
   "Focusing on small daily actions for your child's growth.",
-
+task_week_label: "Task for week {{week}}",
+tasks_done_block_title: "Completed tasks",
+tasks_previous_tasks_title: "Previous tasks",
 
     },
   },
@@ -324,7 +326,9 @@ tasks_all_done_subtitle:
   "Усі завдання на цей тиждень виконано. Зазирніть наступного тижня або відкрийте більше з Premium.",
 tasks_focus_subtitle:
   "Зосереджуємось на маленьких щоденних діях для розвитку вашої дитини.",
-
+task_week_label: "Завдання для {{week}} тижня",
+tasks_done_block_title: "Виконані завдання",
+ tasks_previous_tasks_title: "Попередні завдання",
 
 
     },
@@ -489,9 +493,9 @@ tasks_all_done_subtitle:
   "Todas las tareas de esta semana están completadas. Vuelve la próxima semana para ver nuevas tareas o desbloquea más con Premium.",
 tasks_focus_subtitle:
   "Nos enfocamos en pequeñas acciones diarias para el desarrollo de tu hijo.",
-
-
-
+task_week_label: "Tarea para la semana {{week}}",
+tasks_done_block_title: "Tareas completadas",
+ tasks_previous_tasks_title: "Tareas anteriores",
     },
   },
 };

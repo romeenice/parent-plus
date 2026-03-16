@@ -1,5 +1,4 @@
-// src/screens/HomeScreen.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +12,9 @@ import { auth } from "../services/firebaseConfig";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { getLocalized } from "../utils/getLocalizedField";
+import { getAgeInMonthsFromBirthDate } from "../utils/getAgeInMonthsFromBirthDate";
+import { formatAgeMonths } from "../utils/formatAgeMonths";
 
 const PRIMARY = "#EE2B5B";
 
@@ -21,13 +23,17 @@ export default function HomeScreen({ navigation }) {
   const [article, setArticle] = useState(null);
 
   const userId = auth.currentUser?.uid;
-
   const { currentMonth, ageLabel, child, loading } = useCurrentChild(userId);
+
+  const childAgeMonths = useMemo(() => {
+    if (!child?.birthDate) return currentMonth ?? 0;
+    return getAgeInMonthsFromBirthDate(child.birthDate);
+  }, [child?.birthDate, currentMonth]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        if (!currentMonth) return;
+        if (currentMonth == null) return;
         const articles = await getArticlesForAge(currentMonth);
         if (articles.length > 0) {
           setArticle(articles[0]);
@@ -76,6 +82,9 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
+  const localizedTitle = getLocalized(article.title);
+  const [titlePrefix, titleRest] = localizedTitle.split(": ");
+
   const handleOpenSection = (sectionKey) => {
     navigation.navigate("ArticleDetails", {
       article,
@@ -113,15 +122,13 @@ export default function HomeScreen({ navigation }) {
       >
         {/* Month block */}
         <View style={styles.monthBlock}>
-          <Text style={styles.monthLabel}>{t("home_this_month_label")}</Text>
-          <Text style={styles.monthTitle}>
-            {t("home_month_title_prefix", { month: article.month })}{" "}
-            <Text style={styles.monthTitleAccent}>
-              {article.title.split(": ")[1] || ""}
-            </Text>
-          </Text>
+          {/* Прибрали "Місяць 2: довший час ..." */}
+          {/* <Text style={styles.monthLabel}>{t("home_this_month_label")}</Text> */}
+
           <Text style={styles.monthSubtitle}>
-            {t("home_month_subtitle", { age: ageLabel })}
+            {t("home_month_subtitle", {
+              age: formatAgeMonths(childAgeMonths),
+            })}
           </Text>
         </View>
 

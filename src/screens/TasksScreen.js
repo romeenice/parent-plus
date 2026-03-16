@@ -23,6 +23,10 @@ import { useCurrentChild } from "../hooks/useCurrentChild";
 import { auth, db } from "../services/firebaseConfig";
 import { formatAgeMonths } from "../utils/formatAgeMonths";
 import { useTranslation } from "react-i18next";
+import { getLocalized } from "../utils/getLocalizedField";
+import { getCurrentWeekIndexFromBirthDate } from "../utils/getCurrentWeekIndexFromBirthDate";
+import { getAgeInMonthsFromBirthDate } from "../utils/getAgeInMonthsFromBirthDate";
+
 
 const PRIMARY = "#EE2B5B";
 
@@ -59,16 +63,27 @@ const getStatusStyle = (status) => {
   }
 };
 
+
+
 export default function TasksScreen() {
   const { t } = useTranslation();
   const userId = auth.currentUser?.uid;
-  const { currentMonth, child, loading: childLoading } = useCurrentChild(
-    userId
-  );
+  const { currentMonth, child, loading: childLoading } = useCurrentChild(userId);
 
   const [tasksState, setTasksState] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [loadingTasks, setLoadingTasks] = useState(true);
+
+  const currentWeekIndex = useMemo(() => {
+    if (!child?.birthDate) return 1;
+    return getCurrentWeekIndexFromBirthDate(child.birthDate);
+  }, [child?.birthDate]);
+
+  const childAgeMonths = useMemo(() => {
+  if (!child?.birthDate) return currentMonth ?? 0;
+  return getAgeInMonthsFromBirthDate(child.birthDate);
+}, [child?.birthDate, currentMonth]);
+
 
   // Load tasks templates and user statuses
   useEffect(() => {
@@ -109,7 +124,13 @@ export default function TasksScreen() {
           result.push({ ...tTask, status });
         }
 
-        setTasksState(result);
+        // 3) показуємо тільки ті тижні, які ≤ поточного тижня дитини[web:51]
+        const filteredByWeek = result.filter((task) => {
+          if (typeof task.weekIndex !== "number") return true;
+          return task.weekIndex <= currentWeekIndex;
+        });
+
+        setTasksState(filteredByWeek);
       } catch (e) {
         console.log("Error loading tasks for month", currentMonth, e);
         setTasksState([]);
@@ -119,18 +140,16 @@ export default function TasksScreen() {
     };
 
     loadTasks();
-  }, [currentMonth, userId]);
+  }, [currentMonth, userId, currentWeekIndex]);
 
   const updateTaskStatus = async (taskId, newStatus) => {
     if (!userId) return;
 
-    // 1) Update local state
     setTasksState((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
     setOpenDropdownId(null);
 
-    // 2) Save to Firestore
     try {
       const userTaskRef = doc(db, "users", userId, "tasks", taskId);
       await setDoc(
@@ -145,145 +164,228 @@ export default function TasksScreen() {
     }
   };
 
-  const activeTasks = useMemo(
+  // --- ЛОГІКА СПИСКУ ---
+  const notDoneTasks = useMemo(
     () => tasksState.filter((t) => t.status !== "done"),
     [tasksState]
   );
-
   const doneTasks = useMemo(
     () => tasksState.filter((t) => t.status === "done"),
     [tasksState]
   );
 
-  const allTasks = useMemo(
-    () => [...activeTasks, ...doneTasks],
-    [activeTasks, doneTasks]
+  // розбиваємо по поточному тижню та попередніх
+  const currentNotDone = useMemo(
+    () => notDoneTasks.filter((t) => t.weekIndex === currentWeekIndex),
+    [notDoneTasks, currentWeekIndex]
+  );
+  const previousNotDone = useMemo(
+    () => notDoneTasks.filter((t) => t.weekIndex < currentWeekIndex),
+    [notDoneTasks, currentWeekIndex]
   );
 
+  const currentDone = useMemo(
+    () => doneTasks.filter((t) => t.weekIndex === currentWeekIndex),
+    [doneTasks, currentWeekIndex]
+  );
+  const previousDone = useMemo(
+    () => doneTasks.filter((t) => t.weekIndex < currentWeekIndex),
+    [doneTasks, currentWeekIndex]
+  );
+
+  // сортування всередині одного тижня по order (зростання)
+  const sortAscByOrder = (arr) =>
+    [...arr].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  // сортування попередніх тижнів: від більшого тижня до меншого, всередині — по order
+  const sortDescByWeekThenOrder = (arr) =>
+    [...arr].sort((a, b) => {
+      const aWeek = a.weekIndex ?? 0;
+      const bWeek = b.weekIndex ?? 0;
+      if (aWeek !== bWeek) return bWeek - aWeek; // 4,3,2,1
+      const aOrder = a.order ?? 0;
+      const bOrder = b.order ?? 0;
+      return aOrder - bOrder;
+    });
+
+  const sortedNotDone = useMemo(
+    () => [
+      ...sortAscByOrder(currentNotDone),           // поточний тиждень
+      ...sortDescByWeekThenOrder(previousNotDone) // попередні: 4,3,2,1
+    ],
+    [currentNotDone, previousNotDone]
+  );
+
+  const sortedDone = useMemo(
+    () => [
+      ...sortAscByOrder(currentDone),
+      ...sortDescByWeekThenOrder(previousDone)
+    ],
+    [currentDone, previousDone]
+  );
+
+  const listData = useMemo(
+    () => [...sortedNotDone, ...sortedDone],
+    [sortedNotDone, sortedDone]
+  );
+
+
   const allDone =
-    tasksState.length > 0 &&
-    tasksState.every((t) => t.status === "done");
+    tasksState.length > 0 && tasksState.every((t) => t.status === "done");
 
-  const renderSeparator = () => {
-    if (doneTasks.length === 0 || activeTasks.length === 0) return null;
-
-    return (
-      <View style={styles.separatorRow}>
-        <View style={styles.separatorLine} />
-        <Text style={styles.separatorText}>
-          {t("tasks_previous_tasks")}
-        </Text>
-        <View style={styles.separatorLine} />
-      </View>
-    );
-  };
-
-  const renderTask = ({ item }) => {
+  const renderTask = ({ item, index }) => {
     const statusCfg = getStatusStyle(item.status);
     const isOpen = openDropdownId === item.id;
     const isDone = item.status === "done";
 
+    const title = getLocalized(item.title);
+    const description = getLocalized(item.description);
+
+    const isPreviousWeek = item.weekIndex < currentWeekIndex;
+
+    const showPreviousSeparator =
+      isPreviousWeek &&
+      (index === 0 || listData[index - 1].weekIndex === currentWeekIndex);
+
+    const isFirstDone =
+      item.status === "done" &&
+      (index === 0 || listData[index - 1].status !== "done");
+
     return (
-      <View style={[styles.taskCard, isDone && styles.taskCardDone]}>
-        <View style={styles.taskHeader}>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[styles.taskTitle, isDone && styles.taskTitleDone]}
-            >
-              {item.title}
-            </Text>
-            <Text
-              style={[
-                styles.taskDescription,
-                isDone && styles.taskDescriptionDone,
-              ]}
-            >
-              {item.description}
-            </Text>
+      <>
+        {showPreviousSeparator && (
+          <View style={styles.separatorRow}>
+            <View style={styles.separatorLine} />
+            <Text style={styles.separatorText}>
+  {t("tasks_previous_tasks_title")}
+</Text>
 
-            <View style={styles.tagRow}>
-              <Text
-                style={[
-                  styles.tagText,
-                  isDone && styles.tagTextMuted,
-                ]}
-              >
-                {item.category.toUpperCase()}
-              </Text>
-            </View>
+            <View style={styles.separatorLine} />
           </View>
+        )}
 
-          <View style={styles.statusWrapper}>
-            <TouchableOpacity
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor: statusCfg.bg,
-                  borderColor: statusCfg.border,
-                },
-              ]}
-              onPress={() =>
-                setOpenDropdownId(isOpen ? null : item.id)
-              }
-            >
+        {isFirstDone && (
+          <View style={styles.separatorRow}>
+            <View style={styles.separatorLine} />
+            <Text style={styles.separatorText}>
+              {t("tasks_done_block_title", "Виконані завдання")}
+            </Text>
+            <View style={styles.separatorLine} />
+          </View>
+        )}
+
+        <View style={[styles.taskCard, isDone && styles.taskCardDone]}>
+          <View style={styles.taskHeader}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.taskTitle, isDone && styles.taskTitleDone]}
+              >
+                {title}
+              </Text>
               <Text
                 style={[
-                  styles.statusBadgeText,
-                  { color: statusCfg.text },
+                  styles.taskDescription,
+                  isDone && styles.taskDescriptionDone,
                 ]}
-                numberOfLines={1}
               >
-                {statusCfg.icon}{" "}
-                {
-                  STATUS_OPTIONS.find(
-                    (o) => o.value === item.status
-                  ) && t(
+                {description}
+              </Text>
+
+              <View style={styles.tagRow}>
+                <Text
+                  style={[
+                    styles.tagText,
+                    isDone && styles.tagTextMuted,
+                  ]}
+                >
+                  {item.category?.toUpperCase?.() || ""}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.ageTagText,
+                    isDone && styles.tagTextMuted,
+                  ]}
+                >
+                  {t("task_week_label", {
+                    week: item.weekIndex,
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statusWrapper}>
+              <TouchableOpacity
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: statusCfg.bg,
+                    borderColor: statusCfg.border,
+                  },
+                ]}
+                onPress={() =>
+                  setOpenDropdownId(isOpen ? null : item.id)
+                }
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    { color: statusCfg.text },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {statusCfg.icon}{" "}
+                  {
                     STATUS_OPTIONS.find(
                       (o) => o.value === item.status
-                    ).labelKey
-                  )
-                }
-              </Text>
-            </TouchableOpacity>
+                    ) &&
+                      t(
+                        STATUS_OPTIONS.find(
+                          (o) => o.value === item.status
+                        ).labelKey
+                      )
+                  }
+                </Text>
+              </TouchableOpacity>
 
-            {isOpen && (
-              <View style={styles.dropdown}>
-                {STATUS_OPTIONS.map((option) => {
-                  const optionCfg = getStatusStyle(option.value);
-                  const isActive = option.value === item.status;
+              {isOpen && (
+                <View style={styles.dropdown}>
+                  {STATUS_OPTIONS.map((option) => {
+                    const optionCfg = getStatusStyle(option.value);
+                    const isActive = option.value === item.status;
 
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[
-                        styles.dropdownItem,
-                        isActive && styles.dropdownItemActive,
-                      ]}
-                      onPress={() =>
-                        updateTaskStatus(item.id, option.value)
-                      }
-                    >
-                      <Text
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
                         style={[
-                          styles.dropdownItemText,
-                          isActive && {
-                            color: optionCfg.text,
-                            fontWeight: "700",
-                          },
+                          styles.dropdownItem,
+                          isActive && styles.dropdownItemActive,
                         ]}
-                        numberOfLines={1}
+                        onPress={() =>
+                          updateTaskStatus(item.id, option.value)
+                        }
                       >
-                        {optionCfg.icon}{" "}
-                        {t(option.labelKey)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            isActive && {
+                              color: optionCfg.text,
+                              fontWeight: "700",
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {optionCfg.icon} {t(option.labelKey)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
           </View>
         </View>
-      </View>
+      </>
     );
   };
 
@@ -331,7 +433,7 @@ export default function TasksScreen() {
         <View style={styles.headerTextBlock}>
           <Text style={styles.headerTitle}>
             {t("tasks_header_title", {
-              age: formatAgeMonths(currentMonth),
+              age: formatAgeMonths(childAgeMonths),
             })}
           </Text>
           <Text style={styles.headerSubtitle}>
@@ -379,10 +481,8 @@ export default function TasksScreen() {
         </Text>
       </View>
 
-      {renderSeparator()}
-
       <FlatList
-        data={allTasks}
+        data={listData}
         keyExtractor={(item) => item.id}
         renderItem={renderTask}
         contentContainerStyle={styles.listContent}
@@ -514,6 +614,11 @@ const styles = StyleSheet.create({
   },
   tagTextMuted: {
     color: "#9CA3AF",
+  },
+  ageTagText: {
+    marginTop: 4,
+    fontSize: 11,
+    color: "#64748B",
   },
 
   statusWrapper: {

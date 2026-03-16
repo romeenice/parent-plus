@@ -3,6 +3,7 @@ import React from "react";
 import { ScrollView, Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { getLocalized } from "../utils/getLocalizedField";
 
 const SECTION_CONFIG = {
   development: { labelKey: "article_section_development", field: "development" },
@@ -23,15 +24,14 @@ export default function ArticleDetailsScreen({ route }) {
     );
   }
 
-  const renderSection = (key) => {
-    const config = SECTION_CONFIG[key];
-    if (!config) return null;
+  const renderSection = (config) => {
+    const textObj = article[config.field];    // { en, uk, es } або undefined
+    const text = getLocalized(textObj);       // вже рядок
 
-    const text = article[config.field];
     if (!text) return null;
 
     return (
-      <View key={key} style={styles.sectionBlock}>
+      <View key={config.field} style={styles.sectionBlock}>
         <Text style={styles.sectionTitle}>{t(config.labelKey)}</Text>
         <Text style={styles.sectionText}>{text}</Text>
       </View>
@@ -39,16 +39,19 @@ export default function ArticleDetailsScreen({ route }) {
   };
 
   const sectionKeys = section
-    ? [section] // тільки одна секція
-    : ["development", "psychology", "health", "play"]; // всі секції
+    ? [section]
+    : ["development", "psychology", "health", "play"];
+
+  const localizedTitle = getLocalized(article.title);
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>{article.title}</Text>
-      {sectionKeys.map(renderSection)}
+      <Text style={styles.title}>{localizedTitle}</Text>
+      {sectionKeys.map((key) => renderSection(SECTION_CONFIG[key]))}
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
