@@ -48,7 +48,6 @@ export default function ProfileScreen({ navigation }) {
     (l) => l.code === selectedLanguage
   );
 
-  // Load language from Firestore
   React.useEffect(() => {
     const loadLanguage = async () => {
       try {
@@ -124,12 +123,12 @@ export default function ProfileScreen({ navigation }) {
     navigation.navigate("AddChild");
   };
 
-  const handleEditChild = () => {
-    if (!child) return;
+  const handleEditChild = (childToEdit) => {
+    if (!childToEdit) return;
     navigation.navigate("AddChild", {
       mode: "edit",
-      childId: currentChildId,
-      child,
+      childId: childToEdit.id,
+      child: childToEdit,
     });
   };
 
@@ -151,15 +150,65 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePremiumPress = () => {
-    Alert.alert(
-      t("premium_title"),
-      t("premium_message")
+    Alert.alert(t("premium_title"), t("premium_message"));
+  };
+
+  const renderChildCard = (c) => {
+    const isActive = c.id === currentChildId;
+
+    return (
+       <TouchableOpacity
+      key={c.id}
+      activeOpacity={0.9}
+      onPress={async () => {
+        await setCurrentChildId(c.id);
+       navigation.reset({
+          index: 0,
+          routes: [{ name: "MainTabs" }], // ТУТ має бути ТВОЯ назва кореневого екрана
+        });
+      }}
+      
+      style={[
+        styles.childCard,
+        isActive && styles.childCardActive,
+      ]}
+    >
+        <View style={styles.childAvatar}>
+          <Text style={styles.childAvatarText}>
+            {c.name ? c.name[0].toUpperCase() : "B"}
+          </Text>
+        </View>
+
+        <View style={{ flex: 1, alignItems: "center" }}>
+          <Text style={styles.childName}>{c.name}</Text>
+          <Text style={styles.childSubtitle}>
+            {c.id === currentChildId && ageLabel
+              ? t("current_child_age", { age: ageLabel })
+              : c.birthDate || t("birthdate_not_set")}
+          </Text>
+        </View>
+
+        {/* Edit icon */}
+        <TouchableOpacity
+          style={styles.childEditIcon}
+          onPress={() => handleEditChild(c)}
+        >
+          <Text style={styles.childEditIconText}>✎</Text>
+        </TouchableOpacity>
+
+        {/* Delete icon */}
+        <TouchableOpacity
+          style={styles.childDeleteIcon}
+          onPress={() => handleDeleteChild(c)}
+        >
+          <Text style={styles.childDeleteIconText}>🗑</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
     );
   };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t("profile_title")}</Text>
       </View>
@@ -168,84 +217,22 @@ export default function ProfileScreen({ navigation }) {
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Current child card */}
-        {child && (
-          <View style={styles.childCard}>
-            <View style={styles.childAvatar}>
-              <Text style={styles.childAvatarText}>
-                {child.name ? child.name[0].toUpperCase() : "B"}
-              </Text>
-            </View>
+        {/* Add child button at top */}
+        <TouchableOpacity
+          style={styles.addAnotherButtonTop}
+          onPress={handleAddChild}
+        >
+          <Text style={styles.addAnotherButtonTopText}>
+            {t("add_another_child")}
+          </Text>
+        </TouchableOpacity>
 
-            <View style={{ flex: 1, alignItems: "center" }}>
-              <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childSubtitle}>
-                {ageLabel
-                  ? t("current_child_age", { age: ageLabel })
-                  : t("current_child_age_not_set")}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.addAnotherButton}
-                onPress={handleAddChild}
-              >
-                <Text style={styles.addAnotherText}>
-                  {t("add_another_child")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.childEditIcon}
-              onPress={handleEditChild}
-            >
-              <Text style={styles.childEditIconText}>✎</Text>
-            </TouchableOpacity>
+        {/* Children cards */}
+        {children && children.length > 0 && (
+          <View style={styles.childrenCardsWrapper}>
+            {children.map(renderChildCard)}
           </View>
         )}
-
-        {/* Children list */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("children_section_title")}</Text>
-
-          {children.map((c) => {
-            const isActive = c.id === currentChildId;
-            return (
-              <View
-                key={c.id}
-                style={[
-                  styles.childRow,
-                  isActive && styles.childRowActive,
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.childRowMain}
-                  onPress={() => setCurrentChildId(c.id)}
-                >
-                  <View style={styles.childRowAvatar}>
-                    <Text style={styles.childRowAvatarText}>
-                      {c.name ? c.name[0].toUpperCase() : "B"}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.childRowName}>{c.name}</Text>
-                    <Text style={styles.childRowSubtitle}>
-                      {c.birthDate || t("birthdate_not_set")}
-                    </Text>
-                  </View>
-                  {isActive && <Text style={styles.activeDot}>●</Text>}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => handleDeleteChild(c)}
-                  style={styles.deleteButton}
-                >
-                  <Text style={styles.deleteText}>{t("delete_child_button")}</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
 
         {/* Settings / My Profile */}
         <View style={styles.section}>
@@ -393,10 +380,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  // top card
-  childCard: {
+  // top "add child" button
+  addAnotherButtonTop: {
     marginTop: 8,
+    marginBottom: 12,
+    paddingVertical: 10,
+    borderRadius: 9999,
+    backgroundColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: PRIMARY,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  addAnotherButtonTopText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  childrenCardsWrapper: {
     marginBottom: 20,
+    gap: 12,
+  },
+
+  // child card (reused for all children)
+  childCard: {
     padding: 16,
     borderRadius: 24,
     backgroundColor: "#FFE4EC",
@@ -406,6 +416,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
+    position: "relative",
+  },
+  childCardActive: {
+    borderWidth: 1,
+    borderColor: PRIMARY,
   },
   childAvatar: {
     width: 64,
@@ -431,37 +446,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#64748B",
   },
-  addAnotherButton: {
-    marginTop: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 9999,
-    backgroundColor: PRIMARY,
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  addAnotherText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
   childEditIcon: {
     position: "absolute",
     right: 18,
     top: 18,
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 9999,
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
   childEditIconText: {
-    fontSize: 16,
+    fontSize: 14,
     color: PRIMARY,
     fontWeight: "700",
+  },
+  childDeleteIcon: {
+    position: "absolute",
+    right: 18,
+    bottom: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 9999,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  childDeleteIconText: {
+    fontSize: 14,
+    color: "#EF4444",
   },
 
   // sections
@@ -483,60 +497,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // children list
-  childRow: {
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingVertical: 8,
-  },
-  childRowActive: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 16,
-  },
-  childRowMain: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  childRowAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 9999,
-    backgroundColor: "rgba(148, 163, 184, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  childRowAvatarText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#475569",
-  },
-  childRowName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0F172A",
-  },
-  childRowSubtitle: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginTop: 2,
-  },
-  activeDot: {
-    fontSize: 14,
-    color: PRIMARY,
-    marginLeft: 8,
-  },
-  deleteButton: {
-    alignSelf: "flex-end",
-    marginTop: 4,
-  },
-  deleteText: {
-    fontSize: 12,
-    color: "#EF4444",
-    fontWeight: "600",
-  },
-
-  // settings rows
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -590,7 +550,6 @@ const styles = StyleSheet.create({
     color: PRIMARY,
   },
 
-  // logout
   logoutRow: {
     marginTop: 8,
     alignItems: "center",

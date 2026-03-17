@@ -1,20 +1,85 @@
 // src/screens/ArticleDetailsScreen.js
-import React from "react";
-import { ScrollView, Text, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  Text,
+  StyleSheet,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { getLocalized } from "../utils/getLocalizedField";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
-const SECTION_CONFIG = {
-  development: { labelKey: "article_section_development", field: "development" },
-  psychology: { labelKey: "article_section_psychology", field: "psychology" },
-  health: { labelKey: "article_section_health", field: "health" },
-  play: { labelKey: "article_section_play", field: "play" },
-};
+import { auth, db } from "../services/firebaseConfig";
+import { useCurrentChild } from "../hooks/useCurrentChild";
+import { getLocalized } from "../utils/getLocalizedField";
 
 export default function ArticleDetailsScreen({ route }) {
   const { t } = useTranslation();
-  const { article, section } = route.params || {};
+  const { articleId } = route.params || {};
+
+  const userId = auth.currentUser?.uid;
+  const { currentChildId } = useCurrentChild(userId);
+
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!articleId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        // 1. завантажуємо саму статтю
+        const ref = doc(db, "articles", articleId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const loaded = { id: snap.id, ...snap.data() };
+          setArticle(loaded);
+
+          // 2. позначаємо як прочитану для поточної дитини
+          if (userId && currentChildId) {
+            const stateRef = doc(
+              db,
+              "users",
+              userId,
+              "children",
+              currentChildId,
+              "articleStates",
+              articleId
+            );
+            await setDoc(
+              stateRef,
+              {
+                isRead: true,
+                readAt: new Date(),
+              },
+              { merge: true }
+            );
+          }
+        } else {
+          setArticle(null);
+        }
+      } catch (e) {
+        console.log("Error loading article details", e);
+        setArticle(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [articleId, userId, currentChildId]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.fallback} edges={["top"]}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
 
   if (!article) {
     return (
@@ -24,65 +89,44 @@ export default function ArticleDetailsScreen({ route }) {
     );
   }
 
-  const renderSection = (config) => {
-    const textObj = article[config.field];    // { en, uk, es } або undefined
-    const text = getLocalized(textObj);       // вже рядок
-
-    if (!text) return null;
-
-    return (
-      <View key={config.field} style={styles.sectionBlock}>
-        <Text style={styles.sectionTitle}>{t(config.labelKey)}</Text>
-        <Text style={styles.sectionText}>{text}</Text>
-      </View>
-    );
-  };
-
-  const sectionKeys = section
-    ? [section]
-    : ["development", "psychology", "health", "play"];
-
-  const localizedTitle = getLocalized(article.title);
+  const title = getLocalized(article.title);
+  const content = getLocalized(article.content);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>{localizedTitle}</Text>
-      {sectionKeys.map((key) => renderSection(SECTION_CONFIG[key]))}
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.contentText}>{content}</Text>
     </ScrollView>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-  },
   fallback: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
   },
   fallbackText: {
     fontSize: 16,
-    color: "#666",
+    color: "#64748B",
+    textAlign: "center",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 20,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 16,
   },
-  sectionBlock: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  sectionText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#333",
+  contentText: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
   },
 });
