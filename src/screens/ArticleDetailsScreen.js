@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
+
 import { auth, db } from "../services/firebaseConfig";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { getLocalized } from "../utils/getLocalizedField";

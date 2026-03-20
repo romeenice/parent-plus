@@ -185,7 +185,14 @@ tasks_previous_tasks_title: "Previous tasks",
   "home_no_new_articles": "There are no new articles right now. You’ve seen everything 👏",
   "home_no_read_articles": "You haven’t read any articles for this period yet.",
   "home_article_status_new": "New",
-  "home_article_status_read": "Read"
+  "home_article_status_read": "Read",
+  "home_new_articles_in": "New articles coming in {{days}} days",
+  "tasks_new_tasks_in": "New tasks coming in {{days}} days",
+  "theme_pastel_pink": "Pastel Pink",
+"theme_depressive_grey": "Depressive Grey",
+"theme_cosmic_dust": "Cosmic Dust"
+
+
 
     },
   },
@@ -369,7 +376,16 @@ tasks_done_block_title: "Виконані завдання",
   "home_no_new_articles": "Наразі немає нових статей. Ви все переглянули 👏",
   "home_no_read_articles": "Ви ще не прочитали жодної статті за цей період.",
   "home_article_status_new": "Нове",
-  "home_article_status_read": "Прочитано"
+  "home_article_status_read": "Прочитано",
+  "home_new_articles_in": "До нових статей залишилось {{days}} днів",
+  "tasks_new_tasks_in": "До нових завдань залишилось {{days}} днів",
+  "theme_pastel_pink": "Пастельний рожевий",
+"theme_depressive_grey": "Депресивний сірий",
+"theme_cosmic_dust": "Космічний порошок"
+
+
+
+
 
     },
   },
@@ -557,7 +573,14 @@ tasks_done_block_title: "Tareas completadas",
   "home_no_new_articles": "Por ahora no hay artículos nuevos. Ya lo has visto todo 👏",
   "home_no_read_articles": "Todavía no has leído ningún artículo de este período.",
   "home_article_status_new": "Nuevo",
-  "home_article_status_read": "Leído"
+  "home_article_status_read": "Leído",
+  "home_new_articles_in": "Nuevos artículos en {{days}} días",
+  "tasks_new_tasks_in": "Nuevas tareas en {{days}} días",
+  "theme_pastel_pink": "Rosa Pastel",
+"theme_depressive_grey": "Gris Depresivo",
+"theme_cosmic_dust": "Polvo Cósmico"
+
+
     },
   },
 };

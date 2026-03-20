@@ -9,6 +9,8 @@ import {
   Alert,
   Switch,
 } from "react-native";
+import { useTheme } from "../theme/ThemeContext";
+import { THEMES } from "../theme/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -18,8 +20,6 @@ import { signOut } from "firebase/auth";
 import { auth, db } from "../services/firebaseConfig";
 import i18n from "../i18n";
 
-const PRIMARY = "#EE2B5B";
-
 const LANGUAGE_OPTIONS = [
   { code: "en", label: "English", flag: "🇺🇸" },
   { code: "uk", label: "Українська", flag: "🇺🇦" },
@@ -28,6 +28,7 @@ const LANGUAGE_OPTIONS = [
 
 export default function ProfileScreen({ navigation }) {
   const { t } = useTranslation();
+  const { theme, themeKey, changeTheme } = useTheme();
   const userId = auth.currentUser?.uid;
 
   const {
@@ -43,6 +44,7 @@ export default function ProfileScreen({ navigation }) {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [selectedLanguage, setSelectedLanguage] = React.useState("en");
   const [languageOpen, setLanguageOpen] = React.useState(false);
+  const [themeOpen, setThemeOpen] = React.useState(false);
 
   const currentLanguage = LANGUAGE_OPTIONS.find(
     (l) => l.code === selectedLanguage
@@ -113,8 +115,8 @@ export default function ProfileScreen({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.screen, styles.center]} edges={["top"]}>
-        <Text>{t("common_loading")}</Text>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]}>
+        <Text style={{ color: theme.TEXT }}>{t("common_loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -157,48 +159,53 @@ export default function ProfileScreen({ navigation }) {
     const isActive = c.id === currentChildId;
 
     return (
-       <TouchableOpacity
-      key={c.id}
-      activeOpacity={0.9}
-      onPress={async () => {
-        await setCurrentChildId(c.id);
-       navigation.reset({
-          index: 0,
-          routes: [{ name: "MainTabs" }], // ТУТ має бути ТВОЯ назва кореневого екрана
-        });
-      }}
-      
-      style={[
-        styles.childCard,
-        isActive && styles.childCardActive,
-      ]}
-    >
-        <View style={styles.childAvatar}>
-          <Text style={styles.childAvatarText}>
+      <TouchableOpacity
+        key={c.id}
+        activeOpacity={0.9}
+        onPress={async () => {
+          await setCurrentChildId(c.id);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "MainTabs" }],
+          });
+        }}
+        style={[
+          styles.childCard,
+          isActive && styles.childCardActive,
+          {
+            backgroundColor: theme.CHILD_CARD_BG,
+            borderColor: theme.PRIMARY,
+          },
+        ]}
+      >
+        <View style={[styles.childAvatar, { backgroundColor: theme.CARD_BG }]}>
+          <Text style={[styles.childAvatarText, { color: theme.PRIMARY }]}>
             {c.name ? c.name[0].toUpperCase() : "B"}
           </Text>
         </View>
 
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={styles.childName}>{c.name}</Text>
-          <Text style={styles.childSubtitle}>
+          <Text style={[styles.childName, { color: theme.TEXT }]}>
+            {c.name}
+          </Text>
+          <Text style={[styles.childSubtitle, { color: theme.SECONDARY }]}>
             {c.id === currentChildId && ageLabel
               ? t("current_child_age", { age: ageLabel })
               : c.birthDate || t("birthdate_not_set")}
           </Text>
         </View>
 
-        {/* Edit icon */}
         <TouchableOpacity
-          style={styles.childEditIcon}
+          style={[styles.childEditIcon, { backgroundColor: theme.CARD_BG }]}
           onPress={() => handleEditChild(c)}
         >
-          <Text style={styles.childEditIconText}>✎</Text>
+          <Text style={[styles.childEditIconText, { color: theme.PRIMARY }]}>
+            ✎
+          </Text>
         </TouchableOpacity>
 
-        {/* Delete icon */}
         <TouchableOpacity
-          style={styles.childDeleteIcon}
+          style={[styles.childDeleteIcon, { backgroundColor: theme.CARD_BG }]}
           onPress={() => handleDeleteChild(c)}
         >
           <Text style={styles.childDeleteIconText}>🗑</Text>
@@ -208,18 +215,22 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: theme.BG }]}
+      edges={["top"]}
+    >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t("profile_title")}</Text>
+        <Text style={[styles.headerTitle, { color: theme.TEXT }]}>
+          {t("profile_title")}
+        </Text>
       </View>
 
       <ScrollView
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Add child button at top */}
         <TouchableOpacity
-          style={styles.addAnotherButtonTop}
+          style={[styles.addAnotherButtonTop, { backgroundColor: theme.PRIMARY,shadowColor: theme.PRIMARY, }]}
           onPress={handleAddChild}
         >
           <Text style={styles.addAnotherButtonTopText}>
@@ -227,71 +238,143 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        {/* Children cards */}
         {children && children.length > 0 && (
           <View style={styles.childrenCardsWrapper}>
             {children.map(renderChildCard)}
           </View>
         )}
 
-        {/* Settings / My Profile */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("settings_section_title")}</Text>
+        <View style={[styles.section, { backgroundColor: theme.SECTION_BG }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.SECONDARY },
+            ]}
+          >
+            {t("settings_section_title")}
+          </Text>
 
-          {/* Notifications */}
-          <View style={styles.settingsRow}>
+          <View style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}>
             <View>
-              <Text style={styles.settingsTitle}>
+              <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
                 {t("settings_notifications_title")}
               </Text>
-              <Text style={styles.settingsSubtitle}>
+              <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
                 {t("settings_notifications_subtitle")}
               </Text>
             </View>
             <Switch
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
-              trackColor={{ false: "#E2E8F0", true: "rgba(238,43,91,0.4)" }}
-              thumbColor={notificationsEnabled ? PRIMARY : "#FFFFFF"}
+              trackColor={{
+                false: theme.BORDER,
+                true: `${theme.PRIMARY}40`,
+              }}
+              thumbColor={notificationsEnabled ? theme.PRIMARY : "#FFFFFF"}
             />
           </View>
 
           {/* App Theme */}
-          <TouchableOpacity style={styles.settingsRow}>
-            <View>
-              <Text style={styles.settingsTitle}>
-                {t("settings_theme_title")}
-              </Text>
-              <Text style={styles.settingsSubtitle}>
-                {t("settings_theme_value")}
-              </Text>
-            </View>
-            <Text style={styles.chevron}>{">"}</Text>
+<View>
+  <TouchableOpacity
+    style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
+    onPress={() => setThemeOpen((prev) => !prev)}
+  >
+    <View>
+      <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
+        {t("settings_theme_title")}
+      </Text>
+      <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
+        {t(THEMES[themeKey]?.name || "theme_pastel_pink")}
+      </Text>
+    </View>
+    <Text style={[styles.chevron, { color: theme.SECONDARY }]}>
+      {themeOpen  ? "˄" : "˅"}
+    </Text>
+  </TouchableOpacity>
+
+  {themeOpen  && (
+    <View
+      style={[
+        styles.themeDropdown,
+        {
+          backgroundColor: theme.SECTION_BG,
+          borderColor: theme.BORDER,
+        },
+      ]}
+    >
+      {Object.entries(THEMES).map(([key, themeObj]) => {
+        const isActive = themeKey === key;
+        return (
+          <TouchableOpacity
+            key={key}
+            style={[
+              styles.themeDropdownItem,
+              isActive && {
+                backgroundColor: `${theme.PRIMARY}20`,
+              },
+            ]}
+            onPress={() => {
+              changeTheme(key);
+              setThemeOpen(false);
+            }}
+          >
+            <View
+              style={[
+                styles.themeDropdownPreview,
+                { backgroundColor: themeObj.PRIMARY },
+              ]}
+            />
+            <Text
+              style={[
+                styles.themeDropdownLabel,
+                { color: theme.TEXT },
+                isActive && {
+                  fontWeight: "700",
+                  color: theme.PRIMARY,
+                },
+              ]}
+            >
+               {t(themeObj.name)}
+            </Text>
           </TouchableOpacity>
+        );
+      })}
+    </View>
+  )}
+</View>
 
           {/* Language */}
           <View>
             <TouchableOpacity
-              style={styles.settingsRow}
+              style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
               onPress={() => setLanguageOpen((prev) => !prev)}
             >
               <View>
-                <Text style={styles.settingsTitle}>
+                <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
                   {t("settings_language_title")}
                 </Text>
-                <Text style={styles.settingsSubtitle}>
+                <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
                   {currentLanguage
                     ? `${currentLanguage.flag} ${currentLanguage.label}`
                     : t("settings_language_placeholder")}
                 </Text>
               </View>
-              <Text style={styles.chevron}>
+              <Text style={[styles.chevron, { color: theme.SECONDARY }]}>
                 {languageOpen ? "˄" : "˅"}
               </Text>
             </TouchableOpacity>
 
             {languageOpen && (
-              <View style={styles.languageDropdown}>
+              <View
+                style={[
+                  styles.languageDropdown,
+                  {
+                    backgroundColor: theme.SECTION_BG,
+                    borderColor: theme.BORDER,
+                  },
+                ]}
+              >
                 {LANGUAGE_OPTIONS.map((lang) => {
                   const isActive = lang.code === selectedLanguage;
                   return (
@@ -299,7 +382,9 @@ export default function ProfileScreen({ navigation }) {
                       key={lang.code}
                       style={[
                         styles.languageOption,
-                        isActive && styles.languageOptionActive,
+                        isActive && {
+                          backgroundColor: `${theme.PRIMARY}20`,
+                        },
                       ]}
                       onPress={() => handleLanguagePress(lang.code)}
                     >
@@ -307,7 +392,11 @@ export default function ProfileScreen({ navigation }) {
                       <Text
                         style={[
                           styles.languageLabel,
-                          isActive && styles.languageLabelActive,
+                          { color: theme.TEXT },
+                          isActive && {
+                            fontWeight: "700",
+                            color: theme.PRIMARY,
+                          },
                         ]}
                       >
                         {lang.label}
@@ -319,36 +408,41 @@ export default function ProfileScreen({ navigation }) {
             )}
           </View>
 
-          {/* Help & Support */}
-          <TouchableOpacity style={styles.settingsRow}>
+          <TouchableOpacity
+            style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
+          >
             <View>
-              <Text style={styles.settingsTitle}>
+              <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
                 {t("settings_help_title")}
               </Text>
             </View>
-            <Text style={styles.chevron}>{">"}</Text>
+            <Text style={[styles.chevron, { color: theme.SECONDARY }]}>
+              {">"}
+            </Text>
           </TouchableOpacity>
 
-          {/* Premium+ */}
           <TouchableOpacity
-            style={styles.settingsRow}
+            style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
             onPress={handlePremiumPress}
           >
             <View>
-              <Text style={[styles.settingsTitle, { color: PRIMARY }]}>
+              <Text style={[styles.settingsTitle, { color: theme.PRIMARY }]}>
                 {t("settings_premium_title")}
               </Text>
-              <Text style={styles.settingsSubtitle}>
+              <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
                 {t("settings_premium_subtitle")}
               </Text>
             </View>
-            <Text style={[styles.chevron, { color: PRIMARY }]}>{">"}</Text>
+            <Text style={[styles.chevron, { color: theme.PRIMARY }]}>
+              {">"}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Log out */}
         <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
-          <Text style={styles.logoutText}>{t("logout_button")}</Text>
+          <Text style={[styles.logoutText, { color: theme.SECONDARY }]}>
+            {t("logout_button")}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -358,13 +452,11 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F6F6",
   },
   center: {
     justifyContent: "center",
     alignItems: "center",
   },
-
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -373,23 +465,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0F172A",
   },
-
   content: {
     paddingHorizontal: 16,
   },
-
-  // top "add child" button
   addAnotherButtonTop: {
     marginTop: 8,
     marginBottom: 12,
     paddingVertical: 10,
     borderRadius: 9999,
-    backgroundColor: PRIMARY,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: PRIMARY,
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
@@ -405,11 +491,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  // child card (reused for all children)
   childCard: {
     padding: 16,
     borderRadius: 24,
-    backgroundColor: "#FFE4EC",
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",
@@ -420,13 +504,11 @@ const styles = StyleSheet.create({
   },
   childCardActive: {
     borderWidth: 1,
-    borderColor: PRIMARY,
   },
   childAvatar: {
     width: 64,
     height: 64,
     borderRadius: 9999,
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -434,17 +516,14 @@ const styles = StyleSheet.create({
   childAvatarText: {
     fontSize: 26,
     fontWeight: "800",
-    color: PRIMARY,
   },
   childName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A",
   },
   childSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: "#64748B",
   },
   childEditIcon: {
     position: "absolute",
@@ -453,13 +532,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 9999,
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
   childEditIconText: {
     fontSize: 14,
-    color: PRIMARY,
     fontWeight: "700",
   },
   childDeleteIcon: {
@@ -469,7 +546,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 9999,
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -478,12 +554,10 @@ const styles = StyleSheet.create({
     color: "#EF4444",
   },
 
-  // sections
   section: {
     marginBottom: 16,
     padding: 16,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOpacity: 0.03,
     shadowRadius: 6,
@@ -492,7 +566,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#94A3B8",
     marginBottom: 12,
     letterSpacing: 1,
   },
@@ -503,29 +576,45 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
   },
   settingsTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#0F172A",
   },
   settingsSubtitle: {
     fontSize: 12,
-    color: "#94A3B8",
     marginTop: 2,
   },
   chevron: {
     fontSize: 18,
-    color: "#CBD5F5",
+  },
+
+  themeDropdown: {
+    marginTop: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  themeDropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  themeDropdownPreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 9999,
+  },
+  themeDropdownLabel: {
+    fontSize: 14,
   },
 
   languageDropdown: {
     marginTop: 4,
     borderRadius: 16,
-    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     overflow: "hidden",
   },
   languageOption: {
@@ -534,20 +623,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
-  languageOptionActive: {
-    backgroundColor: "#EFF6FF",
-  },
   languageFlag: {
     fontSize: 18,
     marginRight: 8,
   },
   languageLabel: {
     fontSize: 14,
-    color: "#0F172A",
-  },
-  languageLabelActive: {
-    fontWeight: "700",
-    color: PRIMARY,
   },
 
   logoutRow: {
@@ -557,7 +638,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 14,
-    color: "#94A3B8",
     fontWeight: "600",
   },
 });

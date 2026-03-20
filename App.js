@@ -9,6 +9,10 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./src/services/firebaseConfig";
 import { initI18n } from "./src/i18n";
+import { auth } from "./src/services/firebaseConfig";
+import { useTheme } from "./src/theme/ThemeContext";
+import { ThemeProvider } from "./src/theme/ThemeContext";
+
 
 
 import HomeScreen from "./src/screens/HomeScreen";
@@ -19,7 +23,7 @@ import AppStartScreen from "./src/screens/AppStartScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import AddChildScreen from "./src/screens/AddChildScreen";
 import AuthScreen from "./src/screens/AuthScreen";
-import { auth } from "./src/services/firebaseConfig";
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,13 +46,18 @@ function HomeStack() {
 }
 
 function MainTabs() {
+   const { theme } = useTheme();
   return (
-    <Tab.Navigator
+     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: "#111",
-        tabBarInactiveTintColor: "#999",
+        tabBarActiveTintColor: theme.PRIMARY,
+        tabBarInactiveTintColor: theme.SECONDARY,
         tabBarLabelStyle: { fontSize: 12 },
+        tabBarStyle: {
+          backgroundColor: theme.SECTION_BG,
+          borderTopColor: theme.BORDER,
+        },
         tabBarIcon: ({ color, size }) => {
           if (route.name === "Home") {
             return <Ionicons name="home-outline" size={size} color={color} />;
@@ -129,6 +138,7 @@ if (initializing || !i18nReady) {
 
   return (
     <SafeAreaProvider>
+       <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {user ? (
@@ -148,6 +158,7 @@ if (initializing || !i18nReady) {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

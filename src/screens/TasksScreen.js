@@ -26,6 +26,8 @@ import { useTranslation } from "react-i18next";
 import { getLocalized } from "../utils/getLocalizedField";
 import { getCurrentWeekIndexFromBirthDate } from "../utils/getCurrentWeekIndexFromBirthDate";
 import { getAgeInMonthsFromBirthDate } from "../utils/getAgeInMonthsFromBirthDate";
+import { getDaysUntilNextWeek } from "../utils/getDaysUntilNextWeek";
+
 
 
 const PRIMARY = "#EE2B5B";
@@ -65,7 +67,7 @@ const getStatusStyle = (status) => {
 
 
 
-export default function TasksScreen() {
+export default function TasksScreen({navigation }) {
   const { t } = useTranslation();
   const userId = auth.currentUser?.uid;
   const { currentMonth, child, loading: childLoading } = useCurrentChild(userId);
@@ -83,6 +85,11 @@ export default function TasksScreen() {
   if (!child?.birthDate) return currentMonth ?? 0;
   return getAgeInMonthsFromBirthDate(child.birthDate);
 }, [child?.birthDate, currentMonth]);
+
+const daysUntilNextWeek = useMemo(() => {
+  if (!child?.birthDate) return 0;
+  return getDaysUntilNextWeek(child.birthDate);
+}, [child?.birthDate]);
 
 
   // Load tasks templates and user statuses
@@ -410,18 +417,6 @@ export default function TasksScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={["top"]}>
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.circleIcon}>
-              <Text style={{ fontSize: 20 }}>←</Text>
-            </View>
-
-            <View style={styles.logoRow}>
-              <View style={styles.logoCircle}>
-                <Text style={{ color: PRIMARY }}>👶</Text>
-              </View>
-              <Text style={styles.logoText}>Parents+</Text>
-            </View>
-          </View>
 
           <View style={styles.headerRight}>
             <View style={styles.circleIcon}>
@@ -449,22 +444,29 @@ export default function TasksScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.circleIcon}>
-            <Text style={{ fontSize: 20 }}>←</Text>
-          </View>
+          <TouchableOpacity
+  style={styles.headerLeft}
+  onPress={() => navigation.navigate("Home")}
+>
+  <View style={styles.avatarCircle}>
+    <Text style={styles.avatarText}>
+      {child.name ? child.name[0].toUpperCase() : "P"}
+    </Text>
+  </View>
+  <Text style={styles.appTitle}>Parents+</Text>
+</TouchableOpacity>
 
-          <View style={styles.logoRow}>
-            <View style={styles.logoCircle}>
-              <Text style={{ color: PRIMARY }}>👶</Text>
-            </View>
-            <Text style={styles.logoText}>Parents+</Text>
-          </View>
-        </View>
+{daysUntilNextWeek > 0 && (
+  <View style={styles.countdownBlock}>
+    <Text style={styles.countdownText}>
+      📅 {t("tasks_new_tasks_in", {
+        days: daysUntilNextWeek,
+      })}
+    </Text>
+  </View>
+)}
 
-        <View style={styles.headerRight}>
-          <View style={styles.circleIcon}>
-            <Text style={{ fontSize: 18 }}>⋯</Text>
-          </View>
+
         </View>
       </View>
 
@@ -480,6 +482,7 @@ export default function TasksScreen() {
             : t("tasks_focus_subtitle")}
         </Text>
       </View>
+
 
       <FlatList
         data={listData}
@@ -501,15 +504,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
-    paddingTop: 24,
     paddingHorizontal: 16,
     paddingBottom: 8,
+    paddingTop: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
   headerLeft: {
-    flexDirection: "row",
+   flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
@@ -679,4 +681,39 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     fontWeight: "500",
   },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 9999,
+    backgroundColor: "rgba(238, 43, 91, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  avatarText: {
+    color: PRIMARY,
+    fontWeight: "700",
+  },
+   appTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+
+    countdownBlock: {
+    marginHorizontal: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(238, 43, 91, 0.08)",
+    marginBottom: 16,
+    marginTop: 6,
+    alignItems: "center",
+  },
+  countdownText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: PRIMARY,
+  },
+
 });

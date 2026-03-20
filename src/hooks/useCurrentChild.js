@@ -20,6 +20,7 @@ export function useCurrentChild(userId) {
   const [child, setChild] = useState(null);
   const [ageMonths, setAgeMonths] = useState(null);
   const [loading, setLoading] = useState(true);
+  
 
   const db = getFirestore();
 
