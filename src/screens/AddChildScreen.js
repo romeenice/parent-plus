@@ -19,12 +19,12 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
+import { useTheme } from "../theme/ThemeContext";
 import { auth } from "../services/firebaseConfig";
-
-const PRIMARY = "#EE2B5B";
 
 export default function AddChildScreen({ navigation, route }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const params = route?.params || {};
   const isEdit = params.mode === "edit";
@@ -44,7 +44,7 @@ export default function AddChildScreen({ navigation, route }) {
     setShowPicker(false);
     if (selectedDate) {
       setBirthDateObj(selectedDate);
-      const iso = selectedDate.toISOString().slice(0, 10); // YYYY-MM-DD
+      const iso = selectedDate.toISOString().slice(0, 10);
       setBirthDate(iso);
     }
   };
@@ -99,62 +99,67 @@ export default function AddChildScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      {/* Header */}
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: theme.TEXT }]}>
           {isEdit ? t("add_child_header_edit") : t("add_child_header_add")}
         </Text>
       </View>
 
-      {/* Step + progress */}
-      <View style={styles.stepBlock}>
-        <Text style={styles.stepText}>{t("add_child_step_text")}</Text>
-        <View style={styles.progressBg}>
-          <View style={styles.progressFill} />
-        </View>
-      </View>
-
-      {/* Hero text */}
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>
+        <Text style={[styles.heroTitle, { color: theme.TEXT }]}>
           {isEdit
             ? t("add_child_hero_title_edit")
             : t("add_child_hero_title_add")}
         </Text>
-        <Text style={styles.heroSubtitle}>
+        <Text style={[styles.heroSubtitle, { color: theme.SECONDARY }]}>
           {t("add_child_hero_subtitle")}
         </Text>
       </View>
 
-      {/* Form */}
       <View style={styles.form}>
-        {/* Name */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t("add_child_name_label")}</Text>
+          <Text style={[styles.label, { color: theme.TEXT }]}>
+            {t("add_child_name_label")}
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                borderColor: theme.BORDER,
+                backgroundColor: theme.CARD_BG,
+                color: theme.TEXT,
+              },
+            ]}
             placeholder={t("add_child_name_placeholder")}
+            placeholderTextColor={theme.SECONDARY}
             value={name}
             onChangeText={setName}
           />
         </View>
 
-        {/* Gender */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t("add_child_gender_label")}</Text>
+          <Text style={[styles.label, { color: theme.TEXT }]}>
+            {t("add_child_gender_label")}
+          </Text>
           <View style={styles.genderRow}>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                gender === "male" && styles.genderButtonActive,
+                {
+                  borderColor: gender === "male" ? theme.PRIMARY : theme.BORDER,
+                  backgroundColor: gender === "male" ? `${theme.PRIMARY}10` : theme.CARD_BG,
+                },
               ]}
               onPress={() => setGender("male")}
             >
               <Text
                 style={[
                   styles.genderText,
-                  gender === "male" && styles.genderTextActive,
+                  {
+                    color: gender === "male" ? theme.PRIMARY : theme.SECONDARY,
+                    fontWeight: gender === "male" ? "700" : "500",
+                  },
                 ]}
               >
                 ♂ {t("add_child_gender_male")}
@@ -164,14 +169,20 @@ export default function AddChildScreen({ navigation, route }) {
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                gender === "female" && styles.genderButtonActive,
+                {
+                  borderColor: gender === "female" ? theme.PRIMARY : theme.BORDER,
+                  backgroundColor: gender === "female" ? `${theme.PRIMARY}10` : theme.CARD_BG,
+                },
               ]}
               onPress={() => setGender("female")}
             >
               <Text
                 style={[
                   styles.genderText,
-                  gender === "female" && styles.genderTextActive,
+                  {
+                    color: gender === "female" ? theme.PRIMARY : theme.SECONDARY,
+                    fontWeight: gender === "female" ? "700" : "500",
+                  },
                 ]}
               >
                 ♀ {t("add_child_gender_female")}
@@ -180,18 +191,27 @@ export default function AddChildScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* Birth date */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t("add_child_birthdate_label")}</Text>
+          <Text style={[styles.label, { color: theme.TEXT }]}>
+            {t("add_child_birthdate_label")}
+          </Text>
 
           <TouchableOpacity
-            style={styles.datePickerButton}
+            style={[
+              styles.datePickerButton,
+              {
+                borderColor: theme.BORDER,
+                backgroundColor: theme.CARD_BG,
+              },
+            ]}
             onPress={() => setShowPicker(true)}
           >
             <Text
               style={[
                 styles.datePickerText,
-                !birthDate && { color: "#94A3B8" },
+                {
+                  color: birthDate ? theme.TEXT : theme.SECONDARY,
+                },
               ]}
             >
               {birthDate || t("add_child_birthdate_placeholder")}
@@ -209,12 +229,15 @@ export default function AddChildScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* Footer buttons */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[
             styles.primaryButton,
-            !name || !birthDate ? { opacity: 0.6 } : null,
+            {
+              backgroundColor: theme.PRIMARY,
+              shadowColor: theme.PRIMARY,
+              opacity: !name || !birthDate ? 0.6 : 1,
+            },
           ]}
           onPress={handleSave}
           disabled={!name || !birthDate || saving}
@@ -230,14 +253,15 @@ export default function AddChildScreen({ navigation, route }) {
 
         {!isEdit && (
           <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>{t("add_child_skip")}</Text>
+            <Text style={[styles.skipText, { color: theme.SECONDARY }]}>
+              {t("add_child_skip")}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* decorative blobs */}
-      <View style={styles.blurTop} />
-      <View style={styles.blurMiddle} />
+      <View style={[styles.blurTop, { backgroundColor: `${theme.PRIMARY}06` }]} />
+      <View style={[styles.blurMiddle, { backgroundColor: `${theme.PRIMARY}06` }]} />
     </SafeAreaView>
   );
 }
@@ -245,7 +269,6 @@ export default function AddChildScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F6F6",
     paddingHorizontal: 24,
     paddingTop: 24,
   },
@@ -256,7 +279,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A",
   },
   stepBlock: {
     marginTop: 8,
@@ -264,19 +286,16 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 13,
-    color: "#64748B",
     marginBottom: 8,
   },
   progressBg: {
     height: 4,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.15)",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     width: "40%",
-    backgroundColor: PRIMARY,
     borderRadius: 9999,
   },
   hero: {
@@ -286,13 +305,11 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0F172A",
     textAlign: "left",
   },
   heroSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#64748B",
   },
   form: {
     marginTop: 8,
@@ -304,15 +321,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#0F172A",
     marginBottom: 8,
   },
   input: {
     height: 56,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
     paddingHorizontal: 16,
     fontSize: 16,
   },
@@ -325,36 +339,21 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 9999,
     borderWidth: 2,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
-  genderButtonActive: {
-    borderColor: PRIMARY,
-    backgroundColor: "rgba(238, 43, 91, 0.05)",
-  },
   genderText: {
     fontSize: 15,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  genderTextActive: {
-    color: PRIMARY,
-    fontWeight: "700",
   },
   datePickerButton: {
     height: 56,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
   datePickerText: {
     fontSize: 16,
-    color: "#0F172A",
   },
   footer: {
     marginTop: "auto",
@@ -364,10 +363,8 @@ const styles = StyleSheet.create({
   primaryButton: {
     height: 56,
     borderRadius: 9999,
-    backgroundColor: PRIMARY,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: PRIMARY,
     shadowOpacity: 0.25,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 8 },
@@ -380,7 +377,6 @@ const styles = StyleSheet.create({
   skipText: {
     textAlign: "center",
     fontSize: 14,
-    color: "#94A3B8",
     fontWeight: "600",
   },
   blurTop: {
@@ -390,7 +386,6 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.06)",
   },
   blurMiddle: {
     position: "absolute",
@@ -399,6 +394,5 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.06)",
   },
 });

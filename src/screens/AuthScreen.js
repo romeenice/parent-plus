@@ -20,12 +20,13 @@ import { auth } from "../services/firebaseConfig";
 import { signInWithGoogleExpo } from "../services/googleAuthSession";
 import { useTranslation } from "react-i18next";
 
-const PRIMARY = "#EE2B5B";
+import { useTheme } from "../theme/ThemeContext";
 
 export default function AuthScreen({ navigation }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -98,34 +99,42 @@ export default function AuthScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t("auth_header_title")}</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: theme.TEXT }]}>
+            {t("auth_header_title")}
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: theme.SECONDARY }]}>
             {t("auth_header_subtitle")}
           </Text>
         </View>
 
-        {/* Card */}
-        <View style={styles.card}>
-          {/* Tabs */}
-          <View style={styles.tabsRow}>
+        <View style={[styles.card, { backgroundColor: theme.CARD_BG }]}>
+          <View style={[styles.tabsRow, { backgroundColor: theme.BG }]}>
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                mode === "login" && styles.tabButtonActive,
+                mode === "login" && {
+                  backgroundColor: theme.CARD_BG,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 3 },
+                },
               ]}
               onPress={() => setMode("login")}
             >
               <Text
                 style={[
                   styles.tabText,
-                  mode === "login" && styles.tabTextActive,
+                  {
+                    color: mode === "login" ? theme.PRIMARY : theme.SECONDARY,
+                    fontWeight: mode === "login" ? "700" : "600",
+                  },
                 ]}
               >
                 {t("auth_tab_login")}
@@ -135,14 +144,23 @@ export default function AuthScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                mode === "signup" && styles.tabButtonActive,
+                mode === "signup" && {
+                  backgroundColor: theme.CARD_BG,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 3 },
+                },
               ]}
               onPress={() => setMode("signup")}
             >
               <Text
                 style={[
                   styles.tabText,
-                  mode === "signup" && styles.tabTextActive,
+                  {
+                    color: mode === "signup" ? theme.PRIMARY : theme.SECONDARY,
+                    fontWeight: mode === "signup" ? "700" : "600",
+                  },
                 ]}
               >
                 {t("auth_tab_signup")}
@@ -150,13 +168,22 @@ export default function AuthScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>{t("auth_email_label")}</Text>
+              <Text style={[styles.label, { color: theme.TEXT }]}>
+                {t("auth_email_label")}
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    borderColor: theme.BORDER,
+                    backgroundColor: theme.BG,
+                    color: theme.TEXT,
+                  },
+                ]}
                 placeholder={t("auth_email_placeholder")}
+                placeholderTextColor={theme.SECONDARY}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -165,10 +192,20 @@ export default function AuthScreen({ navigation }) {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>{t("auth_password_label")}</Text>
+              <Text style={[styles.label, { color: theme.TEXT }]}>
+                {t("auth_password_label")}
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    borderColor: theme.BORDER,
+                    backgroundColor: theme.BG,
+                    color: theme.TEXT,
+                  },
+                ]}
                 placeholder={t("auth_password_placeholder")}
+                placeholderTextColor={theme.SECONDARY}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -177,12 +214,20 @@ export default function AuthScreen({ navigation }) {
 
             {isSignup && (
               <View style={styles.field}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: theme.TEXT }]}>
                   {t("auth_confirm_password_label")}
                 </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: theme.BORDER,
+                      backgroundColor: theme.BG,
+                      color: theme.TEXT,
+                    },
+                  ]}
                   placeholder={t("auth_confirm_password_placeholder")}
+                  placeholderTextColor={theme.SECONDARY}
                   value={confirm}
                   onChangeText={setConfirm}
                   secureTextEntry
@@ -200,18 +245,19 @@ export default function AuthScreen({ navigation }) {
                   setShowForgot(true);
                 }}
               >
-                <Text style={styles.forgotLink}>
+                <Text style={[styles.forgotLink, { color: theme.PRIMARY }]}>
                   {t("auth_forgot_password_link")}
                 </Text>
               </TouchableOpacity>
             )}
 
-            {/* Main button */}
             <TouchableOpacity
               style={[
                 styles.primaryButton,
-                (!email || !password || (isSignup && !confirm)) && {
-                  opacity: 0.7,
+                {
+                  backgroundColor: theme.PRIMARY,
+                  shadowColor: theme.PRIMARY,
+                  opacity: (!email || !password || (isSignup && !confirm)) ? 0.7 : 1,
                 },
               ]}
               onPress={handleSubmit}
@@ -226,24 +272,27 @@ export default function AuthScreen({ navigation }) {
               </Text>
             </TouchableOpacity>
 
-            {/* Divider */}
             <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
+              <Text style={[styles.dividerText, { color: theme.SECONDARY }]}>
                 {t("auth_divider_or_continue")}
               </Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
             </View>
 
-            {/* Google button */}
             <TouchableOpacity
-              style={styles.googleButton}
+              style={[
+                styles.googleButton,
+                {
+                  borderColor: theme.BORDER,
+                  backgroundColor: theme.CARD_BG,
+                },
+              ]}
               onPress={async () => {
                 try {
                   setError("");
                   setLoading(true);
                   await signInWithGoogleExpo();
-                  // onAuthStateChanged в App.js сам переведе в MainTabs
                 } catch (e) {
                   console.log("Google login error", e);
                   setError(t("auth_error_google"));
@@ -252,18 +301,16 @@ export default function AuthScreen({ navigation }) {
                 }
               }}
             >
-              <Text style={styles.googleButtonText}>
+              <Text style={[styles.googleButtonText, { color: theme.TEXT }]}>
                 {t("auth_google_button")}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* decorative blobs */}
-        <View style={styles.blurTop} />
-        <View style={styles.blurBottom} />
+        <View style={[styles.blurTop, { backgroundColor: `${theme.PRIMARY}06` }]} />
+        <View style={[styles.blurBottom, { backgroundColor: `${theme.PRIMARY}06` }]} />
 
-        {/* Forgot password modal */}
         <Modal
           visible={showForgot}
           transparent
@@ -271,17 +318,26 @@ export default function AuthScreen({ navigation }) {
           onRequestClose={() => setShowForgot(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>
+            <View style={[styles.modalCard, { backgroundColor: theme.CARD_BG }]}>
+              <Text style={[styles.modalTitle, { color: theme.TEXT }]}>
                 {t("auth_reset_title")}
               </Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={[styles.modalSubtitle, { color: theme.SECONDARY }]}>
                 {t("auth_reset_subtitle")}
               </Text>
 
               <TextInput
-                style={[styles.input, { marginTop: 16 }]}
+                style={[
+                  styles.input,
+                  {
+                    marginTop: 16,
+                    borderColor: theme.BORDER,
+                    backgroundColor: theme.BG,
+                    color: theme.TEXT,
+                  },
+                ]}
                 placeholder={t("auth_reset_email_placeholder")}
+                placeholderTextColor={theme.SECONDARY}
                 value={forgotEmail}
                 onChangeText={setForgotEmail}
                 autoCapitalize="none"
@@ -293,13 +349,16 @@ export default function AuthScreen({ navigation }) {
                   style={styles.modalSecondaryButton}
                   onPress={() => setShowForgot(false)}
                 >
-                  <Text style={styles.modalSecondaryText}>
+                  <Text style={[styles.modalSecondaryText, { color: theme.SECONDARY }]}>
                     {t("auth_reset_cancel")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.modalPrimaryButton}
+                  style={[
+                    styles.modalPrimaryButton,
+                    { backgroundColor: theme.PRIMARY },
+                  ]}
                   onPress={handleForgotSubmit}
                 >
                   <Text style={styles.modalPrimaryText}>
@@ -318,7 +377,6 @@ export default function AuthScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F6F6",
     paddingHorizontal: 24,
     paddingTop: 24,
   },
@@ -328,28 +386,22 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#0F172A",
   },
   headerSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#64748B",
   },
-
   card: {
     marginTop: 8,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
     padding: 16,
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-
   tabsRow: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9",
     borderRadius: 9999,
     padding: 4,
     marginBottom: 16,
@@ -361,22 +413,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  tabButtonActive: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
   tabText: {
     fontSize: 14,
-    color: "#64748B",
-    fontWeight: "600",
   },
-  tabTextActive: {
-    color: PRIMARY,
-  },
-
   form: {
     marginTop: 4,
   },
@@ -386,15 +425,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#0F172A",
     marginBottom: 6,
   },
   input: {
     height: 52,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
     paddingHorizontal: 14,
     fontSize: 15,
   },
@@ -404,7 +440,6 @@ const styles = StyleSheet.create({
   },
   forgotLink: {
     fontSize: 13,
-    color: PRIMARY,
     fontWeight: "600",
   },
   errorText: {
@@ -412,15 +447,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 8,
   },
-
   primaryButton: {
     height: 54,
     borderRadius: 9999,
-    backgroundColor: PRIMARY,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 4,
-    shadowColor: PRIMARY,
     shadowOpacity: 0.25,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 8 },
@@ -430,7 +462,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -439,27 +470,22 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E2E8F0",
   },
   dividerText: {
     marginHorizontal: 8,
     fontSize: 12,
-    color: "#94A3B8",
   },
 
   googleButton: {
     height: 50,
     borderRadius: 9999,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
   googleButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#0F172A",
   },
 
   blurTop: {
@@ -469,7 +495,6 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.06)",
   },
   blurBottom: {
     position: "absolute",
@@ -478,7 +503,6 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.06)",
   },
 
   modalOverlay: {
@@ -491,18 +515,15 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A",
   },
   modalSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#64748B",
   },
   modalButtonsRow: {
     flexDirection: "row",
@@ -516,14 +537,12 @@ const styles = StyleSheet.create({
   },
   modalSecondaryText: {
     fontSize: 14,
-    color: "#64748B",
     fontWeight: "600",
   },
   modalPrimaryButton: {
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 9999,
-    backgroundColor: PRIMARY,
   },
   modalPrimaryText: {
     fontSize: 14,

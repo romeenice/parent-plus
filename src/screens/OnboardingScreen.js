@@ -4,24 +4,34 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
+import { useTheme } from "../theme/ThemeContext";
+
 export default function OnboardingScreen({ navigation }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const handleContinue = () => {
     navigation.navigate("AddChild");
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      {/* Верхній логотип */}
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.logoText}>Parents+</Text>
+        <Text style={[styles.logoText, { color: theme.PRIMARY }]}>
+          Parents+
+        </Text>
       </View>
 
-      {/* Блок з картинкою */}
       <View style={styles.illustrationWrapper}>
-        <View style={styles.blurOuter} />
-        <View style={styles.imageCard}>
+        <View style={[styles.blurOuter, { backgroundColor: `${theme.PRIMARY}05` }]} />
+        <View style={[
+          styles.imageCard,
+          {
+            backgroundColor: `${theme.PRIMARY}10`,
+            borderColor: `${theme.PRIMARY}10`,
+            shadowColor: theme.PRIMARY,
+          }
+        ]}>
           <Image
             source={require("../../assets/12.png")}
             style={styles.babyImage}
@@ -30,39 +40,45 @@ export default function OnboardingScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Текст під картинкою */}
       <View style={styles.textBlock}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.TEXT }]}>
           {t("onboarding_title_line1")}
           {"\n"}
-          <Text style={styles.titleAccent}>
+          <Text style={[styles.titleAccent, { color: theme.PRIMARY }]}>
             {t("onboarding_title_accent")}
           </Text>
         </Text>
 
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: theme.SECONDARY }]}>
           {t("onboarding_subtitle")}
         </Text>
       </View>
 
-      {/* Кнопка + індикатор сторінок */}
       <View style={styles.bottomBlock}>
-        <TouchableOpacity style={styles.button} onPress={handleContinue}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            {
+              backgroundColor: theme.PRIMARY,
+              shadowColor: theme.PRIMARY,
+            },
+          ]}
+          onPress={handleContinue}
+        >
           <Text style={styles.buttonText}>
             {t("onboarding_continue_button")}
           </Text>
         </TouchableOpacity>
 
         <View style={styles.dotsRow}>
-          <View style={styles.dotActive} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
+          <View style={[styles.dotActive, { backgroundColor: theme.PRIMARY }]} />
+          <View style={[styles.dot, { backgroundColor: theme.BORDER }]} />
+          <View style={[styles.dot, { backgroundColor: theme.BORDER }]} />
         </View>
       </View>
 
-      {/* Легкі розмиті “плями” на фоні */}
-      <View style={styles.blurSmall} />
-      <View style={styles.blurBig} />
+      <View style={[styles.blurSmall, { backgroundColor: `${theme.PRIMARY}06` }]} />
+      <View style={[styles.blurBig, { backgroundColor: `${theme.PRIMARY}08` }]} />
     </SafeAreaView>
   );
 }
@@ -70,7 +86,6 @@ export default function OnboardingScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FCFAFA",
     paddingHorizontal: 24,
     paddingTop: 48,
   },
@@ -79,11 +94,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logoText: {
-    color: "#EE2B5B",
     fontSize: 20,
     fontWeight: "800",
   },
-
   illustrationWrapper: {
     alignItems: "center",
     marginTop: 16,
@@ -93,16 +106,12 @@ const styles = StyleSheet.create({
     width: 326,
     height: 326,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.05)",
   },
   imageCard: {
     width: 326,
     height: 326,
     borderRadius: 48,
-    backgroundColor: "#FDF2F4",
     borderWidth: 1,
-    borderColor: "rgba(238, 43, 91, 0.1)",
-    shadowColor: "#EE2B5B",
     shadowOpacity: 0.1,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 4 },
@@ -112,7 +121,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-
   textBlock: {
     marginTop: 40,
     alignItems: "center",
@@ -122,30 +130,25 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
     lineHeight: 40,
-    color: "#0F172A",
   },
   titleAccent: {
-    color: "#EE2B5B",
+    // колір застосовується в JSX
   },
   subtitle: {
     marginTop: 16,
     fontSize: 16,
-    color: "#475569",
     textAlign: "center",
     lineHeight: 24,
   },
-
   bottomBlock: {
     marginTop: 40,
     paddingHorizontal: 8,
   },
   button: {
-    backgroundColor: "#EE2B5B",
     height: 56,
     borderRadius: 9999,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#EE2B5B",
     shadowOpacity: 0.2,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 10 },
@@ -167,13 +170,11 @@ const styles = StyleSheet.create({
     width: 16,
     height: 8,
     borderRadius: 9999,
-    backgroundColor: "#EE2B5B",
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 9999,
-    backgroundColor: "#E2E8F0",
   },
   blurSmall: {
     position: "absolute",
@@ -182,7 +183,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.06)",
   },
   blurBig: {
     position: "absolute",
@@ -191,6 +191,5 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.08)",
   },
 });

@@ -5,8 +5,11 @@ import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
+import { useTheme } from "../theme/ThemeContext";
+
 export default function AppStartScreen({ navigation }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -14,7 +17,7 @@ export default function AppStartScreen({ navigation }) {
       try {
         const db = getFirestore();
         const childrenRef = collection(db, "children");
-        const snap = await getDocs(childrenRef); // поки без userId
+        const snap = await getDocs(childrenRef);
 
         if (!snap.empty) {
           navigation.reset({
@@ -42,14 +45,25 @@ export default function AppStartScreen({ navigation }) {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <ActivityIndicator size="large" />
-      <Text style={styles.text}>{t("app_start_loading")}</Text>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.BG }]}
+      edges={["top"]}
+    >
+      <ActivityIndicator size="large" color={theme.PRIMARY} />
+      <Text style={[styles.text, { color: theme.TEXT }]}>
+        {t("app_start_loading")}
+      </Text>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  text: { marginTop: 12 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  text: {
+    marginTop: 12,
+  },
 });

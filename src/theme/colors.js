@@ -17,10 +17,12 @@ export const THEMES = {
     STATUS_READ_TEXT: "#475569",
     CHILD_CARD_BG: "#FFE4EC",
     SECTION_BG: "#FFFFFF",
+    DROPDOWN_BG: "#FFFFFF", // ДОДАНО
+    COUNTDOWN_BG: "rgba(238, 43, 91, 0.08)", // ДОДАНО
   },
   sadGrey: {
     name: "theme_depressive_grey",
-    PRIMARY: "#6B7280",
+    PRIMARY: "#9CA3AF",
     BG: "#1F2937",
     TEXT: "#F3F4F6",
     SECONDARY: "#9CA3AF",
@@ -36,6 +38,8 @@ export const THEMES = {
     STATUS_READ_TEXT: "#E5E7EB",
     CHILD_CARD_BG: "#374151",
     SECTION_BG: "#2D3748",
+    DROPDOWN_BG: "#374151", // ДОДАНО - світліше
+    COUNTDOWN_BG: "rgba(156, 163, 175, 0.2)", // ДОДАНО - світліше
   },
   cosmic: {
     name: "theme_cosmic_dust",
@@ -54,8 +58,11 @@ export const THEMES = {
     STATUS_READ_BG: "#2D2D44",
     STATUS_READ_TEXT: "#B8A8D8",
     CHILD_CARD_BG: "#2D2D44",
-    SECTION_BG: "#16213E",
+    SECTION_BG: "#1A1A2E",
+    DROPDOWN_BG: "#2D2D44", // ДОДАНО - світліше
+    COUNTDOWN_BG: "rgba(167, 139, 250, 0.2)", // ДОДАНО - світліше
   },
 };
+
 
 export const getTheme = (themeKey) => THEMES[themeKey] || THEMES.pastel;

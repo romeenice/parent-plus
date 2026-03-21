@@ -15,6 +15,7 @@ import { ThemeProvider } from "./src/theme/ThemeContext";
 
 
 
+
 import HomeScreen from "./src/screens/HomeScreen";
 import ArticleDetailsScreen from "./src/screens/ArticleDetailsScreen";
 import TasksScreen from "./src/screens/TasksScreen";
@@ -29,18 +30,32 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function HomeStack() {
+  const { theme } = useTheme();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+     screenOptions={{
+        headerStyle: {
+          backgroundColor: theme.CARD_BG,
+        },
+        headerTintColor: theme.TEXT,
+        headerTitleStyle: {
+          fontWeight: "700",
+        },
+      }}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ArticleDetails"
-        component={ArticleDetailsScreen}
-        options={{ title: "Article" }}
-      />
+  name="ArticleDetails"
+  component={ArticleDetailsScreen}
+  options={({ route }) => ({
+    title: route.params?.articleTitle || "Article",
+    headerBackTitle: "",
+  })}
+/>
+
     </Stack.Navigator>
   );
 }

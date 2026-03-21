@@ -19,18 +19,15 @@ import {
   setDoc,
 } from "firebase/firestore";
 
+import { useTheme } from "../theme/ThemeContext";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { auth, db } from "../services/firebaseConfig";
 import { formatAgeMonths } from "../utils/formatAgeMonths";
 import { useTranslation } from "react-i18next";
 import { getLocalized } from "../utils/getLocalizedField";
-import { getCurrentWeekIndexFromBirthDate } from "../utils/getCurrentWeekIndexFromBirthDate";
+import { getAgeInWeeksFromBirthDate } from "../utils/getAgeInWeeksFromBirthDate";
 import { getAgeInMonthsFromBirthDate } from "../utils/getAgeInMonthsFromBirthDate";
 import { getDaysUntilNextWeek } from "../utils/getDaysUntilNextWeek";
-
-
-
-const PRIMARY = "#EE2B5B";
 
 const STATUS_OPTIONS = [
   { value: "not_started", labelKey: "tasks_status_not_started" },
@@ -65,10 +62,9 @@ const getStatusStyle = (status) => {
   }
 };
 
-
-
-export default function TasksScreen({navigation }) {
+export default function TasksScreen({ navigation }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const userId = auth.currentUser?.uid;
   const { currentMonth, child, loading: childLoading } = useCurrentChild(userId);
 
@@ -78,24 +74,22 @@ export default function TasksScreen({navigation }) {
 
   const currentWeekIndex = useMemo(() => {
     if (!child?.birthDate) return 1;
-    return getCurrentWeekIndexFromBirthDate(child.birthDate);
+    return getAgeInWeeksFromBirthDate(child.birthDate);
   }, [child?.birthDate]);
 
   const childAgeMonths = useMemo(() => {
-  if (!child?.birthDate) return currentMonth ?? 0;
-  return getAgeInMonthsFromBirthDate(child.birthDate);
-}, [child?.birthDate, currentMonth]);
+    if (!child?.birthDate) return currentMonth ?? 0;
+    return getAgeInMonthsFromBirthDate(child.birthDate);
+  }, [child?.birthDate, currentMonth]);
 
-const daysUntilNextWeek = useMemo(() => {
-  if (!child?.birthDate) return 0;
-  return getDaysUntilNextWeek(child.birthDate);
-}, [child?.birthDate]);
+  const daysUntilNextWeek = useMemo(() => {
+    if (!child?.birthDate) return 0;
+    return getDaysUntilNextWeek(child.birthDate);
+  }, [child?.birthDate]);
 
-
-  // Load tasks templates and user statuses
   useEffect(() => {
     const loadTasks = async () => {
-      if (!currentMonth || !userId) {
+      if (!userId) {
         setTasksState([]);
         setLoadingTasks(false);
         return;
@@ -104,9 +98,16 @@ const daysUntilNextWeek = useMemo(() => {
       try {
         setLoadingTasks(true);
 
-        // 1) Load templates for this month
+        const WEEKS_WINDOW = 8;
+        const maxWeek = currentWeekIndex;
+        const minWeek = Math.max(1, maxWeek - WEEKS_WINDOW + 1);
+
         const tasksRef = collection(db, "tasks");
-        const qTasks = query(tasksRef, where("month", "==", currentMonth));
+        const qTasks = query(
+          tasksRef,
+          where("weekIndex", ">=", minWeek),
+          where("weekIndex", "<=", maxWeek)
+        );
         const snapTasks = await getDocs(qTasks);
 
         const templates = [];
@@ -114,7 +115,6 @@ const daysUntilNextWeek = useMemo(() => {
           templates.push({ id: d.id, ...d.data() });
         });
 
-        // 2) Load user statuses for these taskIds
         const userTasksRef = collection(db, "users", userId, "tasks");
         const result = [];
 
@@ -131,15 +131,9 @@ const daysUntilNextWeek = useMemo(() => {
           result.push({ ...tTask, status });
         }
 
-        // 3) показуємо тільки ті тижні, які ≤ поточного тижня дитини[web:51]
-        const filteredByWeek = result.filter((task) => {
-          if (typeof task.weekIndex !== "number") return true;
-          return task.weekIndex <= currentWeekIndex;
-        });
-
-        setTasksState(filteredByWeek);
+        setTasksState(result);
       } catch (e) {
-        console.log("Error loading tasks for month", currentMonth, e);
+        console.log("Error loading tasks", e);
         setTasksState([]);
       } finally {
         setLoadingTasks(false);
@@ -147,7 +141,7 @@ const daysUntilNextWeek = useMemo(() => {
     };
 
     loadTasks();
-  }, [currentMonth, userId, currentWeekIndex]);
+  }, [userId, currentWeekIndex]);
 
   const updateTaskStatus = async (taskId, newStatus) => {
     if (!userId) return;
@@ -171,7 +165,6 @@ const daysUntilNextWeek = useMemo(() => {
     }
   };
 
-  // --- ЛОГІКА СПИСКУ ---
   const notDoneTasks = useMemo(
     () => tasksState.filter((t) => t.status !== "done"),
     [tasksState]
@@ -181,7 +174,6 @@ const daysUntilNextWeek = useMemo(() => {
     [tasksState]
   );
 
-  // розбиваємо по поточному тижню та попередніх
   const currentNotDone = useMemo(
     () => notDoneTasks.filter((t) => t.weekIndex === currentWeekIndex),
     [notDoneTasks, currentWeekIndex]
@@ -200,28 +192,24 @@ const daysUntilNextWeek = useMemo(() => {
     [doneTasks, currentWeekIndex]
   );
 
-  // сортування всередині одного тижня по order (зростання)
   const sortAscByOrder = (arr) =>
     [...arr].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  // сортування попередніх тижнів: від більшого тижня до меншого, всередині — по order
   const sortDescByWeekThenOrder = (arr) =>
     [...arr].sort((a, b) => {
       const aWeek = a.weekIndex ?? 0;
       const bWeek = b.weekIndex ?? 0;
-      if (aWeek !== bWeek) return bWeek - aWeek; // 4,3,2,1
+      if (aWeek !== bWeek) return bWeek - aWeek;
       const aOrder = a.order ?? 0;
       const bOrder = b.order ?? 0;
       return aOrder - bOrder;
     });
 
-  const sortedNotDone = useMemo(
-    () => [
-      ...sortAscByOrder(currentNotDone),           // поточний тиждень
-      ...sortDescByWeekThenOrder(previousNotDone) // попередні: 4,3,2,1
-    ],
-    [currentNotDone, previousNotDone]
-  );
+  const sortedNotDone = useMemo(() => {
+    const current = sortAscByOrder(currentNotDone);
+    const previous = sortDescByWeekThenOrder(previousNotDone);
+    return [...current, ...previous];
+  }, [currentNotDone, previousNotDone]);
 
   const sortedDone = useMemo(
     () => [
@@ -236,7 +224,6 @@ const daysUntilNextWeek = useMemo(() => {
     [sortedNotDone, sortedDone]
   );
 
-
   const allDone =
     tasksState.length > 0 && tasksState.every((t) => t.status === "done");
 
@@ -249,49 +236,79 @@ const daysUntilNextWeek = useMemo(() => {
     const description = getLocalized(item.description);
 
     const isPreviousWeek = item.weekIndex < currentWeekIndex;
+    const isCurrentWeek = item.weekIndex === currentWeekIndex;
 
+    // Роздільник "Нові завдання" (для поточного тижня)
+    const showNewSeparator =
+      isCurrentWeek &&
+      item.status !== "done" &&
+      (index === 0 || listData[index - 1].weekIndex !== currentWeekIndex || listData[index - 1].status === "done");
+
+    // Роздільник "Попередні завдання"
     const showPreviousSeparator =
       isPreviousWeek &&
       (index === 0 || listData[index - 1].weekIndex === currentWeekIndex);
 
+    // Роздільник "Виконані завдання"
     const isFirstDone =
       item.status === "done" &&
       (index === 0 || listData[index - 1].status !== "done");
 
     return (
       <>
+        {showNewSeparator && (
+          <View style={styles.separatorRow}>
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
+            <Text style={[styles.separatorText, { color: theme.PRIMARY }]}>
+              ✨ {t("home_article_status_new")}
+            </Text>
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
+          </View>
+        )}
+
         {showPreviousSeparator && (
           <View style={styles.separatorRow}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>
-  {t("tasks_previous_tasks_title")}
-</Text>
-
-            <View style={styles.separatorLine} />
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
+            <Text style={[styles.separatorText, { color: theme.SECONDARY }]}>
+              {t("tasks_previous_tasks_title")}
+            </Text>
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
           </View>
         )}
 
         {isFirstDone && (
           <View style={styles.separatorRow}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>
-              {t("tasks_done_block_title", "Виконані завдання")}
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
+            <Text style={[styles.separatorText, { color: theme.SECONDARY }]}>
+              {t("tasks_done_block_title")}
             </Text>
-            <View style={styles.separatorLine} />
+            <View style={[styles.separatorLine, { backgroundColor: theme.BORDER }]} />
           </View>
         )}
 
-        <View style={[styles.taskCard, isDone && styles.taskCardDone]}>
+        <View style={[
+          styles.taskCard,
+          isDone && styles.taskCardDone,
+          { 
+            backgroundColor: theme.CARD_BG,
+            borderColor: theme.BORDER,
+          }
+        ]}>
           <View style={styles.taskHeader}>
             <View style={{ flex: 1 }}>
               <Text
-                style={[styles.taskTitle, isDone && styles.taskTitleDone]}
+                style={[
+                  styles.taskTitle,
+                  { color: theme.TEXT },
+                  isDone && styles.taskTitleDone,
+                ]}
               >
                 {title}
               </Text>
               <Text
                 style={[
                   styles.taskDescription,
+                  { color: theme.SECONDARY },
                   isDone && styles.taskDescriptionDone,
                 ]}
               >
@@ -302,6 +319,7 @@ const daysUntilNextWeek = useMemo(() => {
                 <Text
                   style={[
                     styles.tagText,
+                    { color: theme.PRIMARY },
                     isDone && styles.tagTextMuted,
                   ]}
                 >
@@ -311,6 +329,7 @@ const daysUntilNextWeek = useMemo(() => {
                 <Text
                   style={[
                     styles.ageTagText,
+                    { color: theme.SECONDARY },
                     isDone && styles.tagTextMuted,
                   ]}
                 >
@@ -356,7 +375,13 @@ const daysUntilNextWeek = useMemo(() => {
               </TouchableOpacity>
 
               {isOpen && (
-                <View style={styles.dropdown}>
+                <View style={[
+                  styles.dropdown,
+                  {
+                    backgroundColor: theme.DROPDOWN_BG,
+                    borderColor: theme.BORDER,
+                  }
+                ]}>
                   {STATUS_OPTIONS.map((option) => {
                     const optionCfg = getStatusStyle(option.value);
                     const isActive = option.value === item.status;
@@ -366,7 +391,9 @@ const daysUntilNextWeek = useMemo(() => {
                         key={option.value}
                         style={[
                           styles.dropdownItem,
-                          isActive && styles.dropdownItemActive,
+                          isActive && {
+                            backgroundColor: `${theme.PRIMARY}20`,
+                          },
                         ]}
                         onPress={() =>
                           updateTaskStatus(item.id, option.value)
@@ -375,8 +402,9 @@ const daysUntilNextWeek = useMemo(() => {
                         <Text
                           style={[
                             styles.dropdownItemText,
+                            { color: theme.TEXT },
                             isActive && {
-                              color: optionCfg.text,
+                              color: theme.PRIMARY,
                               fontWeight: "700",
                             },
                           ]}
@@ -396,42 +424,62 @@ const daysUntilNextWeek = useMemo(() => {
     );
   };
 
-  // Loading states
   if (childLoading || loadingTasks) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center, { backgroundColor: theme.BG }]}>
+        <ActivityIndicator size="large" color={theme.PRIMARY} />
       </View>
     );
   }
 
   if (!child) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <Text>{t("tasks_no_child")}</Text>
+      <View style={[styles.screen, styles.center, { backgroundColor: theme.BG }]}>
+        <Text style={{ color: theme.TEXT }}>{t("tasks_no_child")}</Text>
       </View>
-    );
+        );
   }
 
   if (!tasksState || tasksState.length === 0) {
     return (
-      <SafeAreaView style={styles.screen} edges={["top"]}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
         <View style={styles.header}>
-
-          <View style={styles.headerRight}>
-            <View style={styles.circleIcon}>
-              <Text style={{ fontSize: 18 }}>⋯</Text>
+          <TouchableOpacity
+            style={styles.headerLeft}
+            onPress={() => navigation.navigate("Home")}
+          >
+            <View style={[
+              styles.avatarCircle,
+              { backgroundColor: `${theme.PRIMARY}15` }
+            ]}>
+              <Text style={[styles.avatarText, { color: theme.PRIMARY }]}>
+                {child.name ? child.name[0].toUpperCase() : "P"}
+              </Text>
             </View>
-          </View>
+            <Text style={[styles.appTitle, { color: theme.TEXT }]}>Parents+</Text>
+          </TouchableOpacity>
+
+          {daysUntilNextWeek > 0 && (
+            <View style={[
+              styles.countdownBlock,
+              { backgroundColor: theme.COUNTDOWN_BG }
+            ]}>
+              <Text style={[styles.countdownText, { color: theme.PRIMARY }]}>
+                📅 {t("tasks_new_tasks_in", {
+                  days: daysUntilNextWeek,
+                })}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, { color: theme.TEXT }]}>
             {t("tasks_header_title", {
               age: formatAgeMonths(childAgeMonths),
             })}
           </Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: theme.SECONDARY }]}>
             {t("tasks_empty_subtitle")}
           </Text>
         </View>
@@ -440,49 +488,49 @@ const daysUntilNextWeek = useMemo(() => {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      {/* Header */}
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-  style={styles.headerLeft}
-  onPress={() => navigation.navigate("Home")}
->
-  <View style={styles.avatarCircle}>
-    <Text style={styles.avatarText}>
-      {child.name ? child.name[0].toUpperCase() : "P"}
-    </Text>
-  </View>
-  <Text style={styles.appTitle}>Parents+</Text>
-</TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerLeft}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <View style={[
+            styles.avatarCircle,
+            { backgroundColor: `${theme.PRIMARY}15` }
+          ]}>
+            <Text style={[styles.avatarText, { color: theme.PRIMARY }]}>
+              {child.name ? child.name[0].toUpperCase() : "P"}
+            </Text>
+          </View>
+          <Text style={[styles.appTitle, { color: theme.TEXT }]}>Parents+</Text>
+        </TouchableOpacity>
 
-{daysUntilNextWeek > 0 && (
-  <View style={styles.countdownBlock}>
-    <Text style={styles.countdownText}>
-      📅 {t("tasks_new_tasks_in", {
-        days: daysUntilNextWeek,
-      })}
-    </Text>
-  </View>
-)}
-
-
-        </View>
+        {daysUntilNextWeek > 0 && (
+          <View style={[
+            styles.countdownBlock,
+            { backgroundColor: theme.COUNTDOWN_BG }
+          ]}>
+            <Text style={[styles.countdownText, { color: theme.PRIMARY }]}>
+              📅 {t("tasks_new_tasks_in", {
+                days: daysUntilNextWeek,
+              })}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.headerTextBlock}>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: theme.TEXT }]}>
           {t("tasks_header_title", {
-            age: formatAgeMonths(currentMonth),
+            age: formatAgeMonths(childAgeMonths),
           })}
         </Text>
-        <Text style={styles.headerSubtitle}>
+        <Text style={[styles.headerSubtitle, { color: theme.SECONDARY }]}>
           {allDone
             ? t("tasks_all_done_subtitle")
             : t("tasks_focus_subtitle")}
         </Text>
       </View>
-
 
       <FlatList
         data={listData}
@@ -497,7 +545,6 @@ const daysUntilNextWeek = useMemo(() => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F6F6",
   },
   center: {
     justifyContent: "center",
@@ -509,43 +556,26 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   headerLeft: {
-   flexDirection: "row",
+    flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  headerRight: {},
-  circleIcon: {
-    width: 36,
-    height: 36,
+  avatarCircle: {
+    width: 32,
+    height: 32,
     borderRadius: 9999,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginLeft: 8,
-  },
-  logoCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.1)",
     justifyContent: "center",
     alignItems: "center",
   },
-  logoText: {
-    fontSize: 16,
+  avatarText: {
     fontWeight: "700",
-    color: "#0F172A",
+  },
+  appTitle: {
+    fontSize: 18,
+    fontWeight: "800",
   },
   headerTextBlock: {
     paddingHorizontal: 16,
@@ -554,12 +584,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0F172A",
   },
   headerSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: "#64748B",
   },
   listContent: {
     paddingHorizontal: 16,
@@ -567,9 +595,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     gap: 12,
   },
-
   taskCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 24,
     padding: 16,
     shadowColor: "#000",
@@ -577,7 +603,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     marginBottom: 12,
   },
   taskCardDone: {
@@ -590,7 +615,6 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A",
     marginBottom: 4,
   },
   taskTitleDone: {
@@ -599,7 +623,6 @@ const styles = StyleSheet.create({
   },
   taskDescription: {
     fontSize: 14,
-    color: "#64748B",
   },
   taskDescriptionDone: {
     color: "#9CA3AF",
@@ -612,7 +635,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: PRIMARY,
   },
   tagTextMuted: {
     color: "#9CA3AF",
@@ -620,9 +642,7 @@ const styles = StyleSheet.create({
   ageTagText: {
     marginTop: 4,
     fontSize: 11,
-    color: "#64748B",
   },
-
   statusWrapper: {
     marginLeft: 12,
     alignItems: "flex-end",
@@ -637,32 +657,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-
   dropdown: {
     marginTop: 8,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     minWidth: 160,
   },
   dropdownItem: {
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  dropdownItemActive: {
-    backgroundColor: "#F1F5F9",
-  },
   dropdownItemText: {
     fontSize: 13,
-    color: "#475569",
   },
-
   separatorRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -673,47 +685,21 @@ const styles = StyleSheet.create({
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E2E8F0",
   },
   separatorText: {
     marginHorizontal: 8,
     fontSize: 12,
-    color: "#94A3B8",
     fontWeight: "500",
   },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 9999,
-    backgroundColor: "rgba(238, 43, 91, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  avatarText: {
-    color: PRIMARY,
-    fontWeight: "700",
-  },
-   appTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-
-    countdownBlock: {
-    marginHorizontal: 16,
+  countdownBlock: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: "rgba(238, 43, 91, 0.08)",
-    marginBottom: 16,
     marginTop: 6,
     alignItems: "center",
   },
   countdownText: {
     fontSize: 13,
     fontWeight: "600",
-    color: PRIMARY,
   },
-
 });

@@ -11,13 +11,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
-
+import { useTheme } from "../theme/ThemeContext";
 import { auth, db } from "../services/firebaseConfig";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { getLocalized } from "../utils/getLocalizedField";
 
 export default function ArticleDetailsScreen({ route }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { articleId } = route.params || {};
 
   const userId = auth.currentUser?.uid;
@@ -33,14 +34,12 @@ export default function ArticleDetailsScreen({ route }) {
         return;
       }
       try {
-        // 1. завантажуємо саму статтю
         const ref = doc(db, "articles", articleId);
         const snap = await getDoc(ref);
         if (snap.exists()) {
           const loaded = { id: snap.id, ...snap.data() };
           setArticle(loaded);
 
-          // 2. позначаємо як прочитану для поточної дитини
           if (userId && currentChildId) {
             const stateRef = doc(
               db,
@@ -76,16 +75,24 @@ export default function ArticleDetailsScreen({ route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.fallback} edges={["top"]}>
-        <ActivityIndicator size="large" />
+      <SafeAreaView
+        style={[styles.fallback, { backgroundColor: theme.BG }]}
+        edges={["top"]}
+      >
+        <ActivityIndicator size="large" color={theme.PRIMARY} />
       </SafeAreaView>
     );
   }
 
   if (!article) {
     return (
-      <SafeAreaView style={styles.fallback} edges={["top"]}>
-        <Text style={styles.fallbackText}>{t("article_no_data")}</Text>
+      <SafeAreaView
+        style={[styles.fallback, { backgroundColor: theme.BG }]}
+        edges={["top"]}
+      >
+        <Text style={[styles.fallbackText, { color: theme.SECONDARY }]}>
+          {t("article_no_data")}
+        </Text>
       </SafeAreaView>
     );
   }
@@ -94,9 +101,14 @@ export default function ArticleDetailsScreen({ route }) {
   const content = getLocalized(article.content);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.contentText}>{content}</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.CARD_BG }]}
+      contentContainerStyle={{ paddingBottom: 24 }}
+    >
+      <Text style={[styles.title, { color: theme.TEXT }]}>{title}</Text>
+      <Text style={[styles.contentText, { color: theme.SECONDARY }]}>
+        {content}
+      </Text>
     </ScrollView>
   );
 }
@@ -110,24 +122,20 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     fontSize: 16,
-    color: "#64748B",
     textAlign: "center",
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingTop: 16,
   },
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#0F172A",
     marginBottom: 16,
   },
   contentText: {
     fontSize: 14,
-    color: "#475569",
     lineHeight: 20,
   },
 });
