@@ -1,3 +1,4 @@
+// color.js
 export const THEMES = {
   pastel: {
     name: "theme_pastel_pink",

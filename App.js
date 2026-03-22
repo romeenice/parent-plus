@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { onAuthStateChanged } from "firebase/auth";
@@ -12,10 +13,6 @@ import { initI18n } from "./src/i18n";
 import { auth } from "./src/services/firebaseConfig";
 import { useTheme } from "./src/theme/ThemeContext";
 import { ThemeProvider } from "./src/theme/ThemeContext";
-import { seedArticlesOnce } from "./src/dev/seedContent";
-
-
-
 
 import HomeScreen from "./src/screens/HomeScreen";
 import ArticleDetailsScreen from "./src/screens/ArticleDetailsScreen";
@@ -26,7 +23,6 @@ import OnboardingScreen from "./src/screens/OnboardingScreen";
 import AddChildScreen from "./src/screens/AddChildScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 
-
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -34,7 +30,7 @@ function HomeStack() {
   const { theme } = useTheme();
   return (
     <Stack.Navigator
-     screenOptions={{
+      screenOptions={{
         headerStyle: {
           backgroundColor: theme.CARD_BG,
         },
@@ -42,29 +38,29 @@ function HomeStack() {
         headerTitleStyle: {
           fontWeight: "700",
         },
-      }}>
+      }}
+    >
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-  name="ArticleDetails"
-  component={ArticleDetailsScreen}
-  options={({ route }) => ({
-    title: route.params?.articleTitle || "Article",
-    headerBackTitle: "",
-  })}
-/>
-
+        name="ArticleDetails"
+        component={ArticleDetailsScreen}
+        options={({ route }) => ({
+          title: route.params?.articleTitle || "Article",
+          headerBackTitle: "",
+        })}
+      />
     </Stack.Navigator>
   );
 }
 
 function MainTabs() {
-   const { theme } = useTheme();
+  const { theme } = useTheme();
   return (
-     <Tab.Navigator
+    <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.PRIMARY,
@@ -103,16 +99,22 @@ function MainTabs() {
   );
 }
 
-export default function App() {
+function AppContent() {
+  const { themeKey } = useTheme();
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
-
   const [i18nReady, setI18nReady] = useState(false);
   const [appLanguage, setAppLanguage] = useState("en");
+  const [statusBarStyle, setStatusBarStyle] = useState("dark-content");
+
+  // ✅ Оновлюємо status bar коли змінюється тема
+  useEffect(() => {
+    const newStyle = themeKey === "pastel" ? "dark-content" : "light-content";
+    setStatusBarStyle(newStyle);
+  }, [themeKey]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      // console.log("AUTH STATE CHANGED >>>", firebaseUser?.uid);
       setUser(firebaseUser || null);
       setInitializing(false);
     });
@@ -120,48 +122,48 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-  const loadLanguageAndInit = async () => {
-    try {
-      let lang = "en";
+    const loadLanguageAndInit = async () => {
+      try {
+        let lang = "en";
 
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists() && snap.data().language) {
-          lang = snap.data().language;
+        if (user) {
+          const userRef = doc(db, "users", user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists() && snap.data().language) {
+            lang = snap.data().language;
+          }
         }
+
+        await initI18n(lang);
+        setAppLanguage(lang);
+        setI18nReady(true);
+      } catch (e) {
+        console.log("Error init i18n", e);
+        await initI18n("en");
+        setAppLanguage("en");
+        setI18nReady(true);
       }
+    };
 
-      await initI18n(lang);
-      setAppLanguage(lang);
-      setI18nReady(true);
-    } catch (e) {
-      console.log("Error init i18n", e);
-      await initI18n("en");
-      setAppLanguage("en");
-      setI18nReady(true);
-    }
-  };
+    loadLanguageAndInit();
+  }, [user]);
 
-  loadLanguageAndInit();
-  // seedArticlesOnce();
-}, [user]);
-
-
-
-if (initializing || !i18nReady) {
-  return null; // тут можна буде зробити SplashScreen
-}
-
+  if (initializing || !i18nReady) {
+    return null;
+  }
 
   return (
-    <SafeAreaProvider>
-       <ThemeProvider>
+    <>
+      <StatusBar
+        barStyle={statusBarStyle}
+        backgroundColor="transparent"
+        translucent
+      />
+
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {user ? (
             <>
-              {/* залогінений користувач */}
               <Stack.Screen name="MainTabs" component={MainTabs} />
               <Stack.Screen name="AppStart" component={AppStartScreen} />
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -170,12 +172,20 @@ if (initializing || !i18nReady) {
             </>
           ) : (
             <>
-              {/* не залогінений */}
               <Stack.Screen name="Auth" component={AuthScreen} />
             </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -1,3 +1,4 @@
+// src/theme/ThemeContext.js
 import React, { createContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
@@ -8,8 +9,14 @@ export const ThemeContext = createContext();
 export function ThemeProvider({ children }) {
   const [themeKey, setThemeKey] = useState("pastel");
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
 
-  const userId = auth.currentUser?.uid;
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUserId(user?.uid || null);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -22,7 +29,7 @@ export function ThemeProvider({ children }) {
         const snap = await getDoc(userRef);
         if (snap.exists()) {
           const data = snap.data();
-          if (data.themeKey) {
+          if (data.themeKey && THEMES[data.themeKey]) {
             setThemeKey(data.themeKey);
           }
         }

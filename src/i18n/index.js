@@ -129,7 +129,7 @@ home_no_articles_for_age: "There are no articles for this age yet.",
 
 home_this_month_label: "THIS MONTH",
 home_month_title_prefix: "Month {{month}}:",
-home_month_subtitle: "Your child is about {{age}} old.",
+home_month_subtitle: "Your child is {{age}} old.",
 
 home_section_development_title: "Development",
 home_section_development_description: "What your baby is learning this month.",
@@ -191,12 +191,25 @@ tasks_previous_tasks_title: "Previous tasks",
   "theme_pastel_pink": "Pastel Pink",
 "theme_depressive_grey": "Depressive Grey",
 "theme_cosmic_dust": "Cosmic Dust",
-"home_previous_weeks_title": "Previous weeks"
+"home_previous_weeks_title": "Previous weeks",
+ month: "month",
+    months: "months",
+    year: "year",
+    years: "years",
+    and: "and",
+   categories: {
+      psychology: "Psychology",
+      health: "Health",
+      development: "Development",
+      play: "Play"
+    }
 
 
 
 
     },
+    
+    
   },
   uk: {
     translation: {
@@ -323,7 +336,7 @@ home_no_articles_for_age: "Поки що немає статей для цьог
 
 home_this_month_label: "ЦЬОГО МІСЯЦЯ",
 home_month_title_prefix: "Місяць {{month}}:",
-home_month_subtitle: "Вашій дитині приблизно {{age}}.",
+home_month_subtitle: "Вашій дитині {{age}}.",
 
 home_section_development_title: "Розвиток",
 home_section_development_description: "Що ваша дитина вчиться цього місяця.",
@@ -384,7 +397,19 @@ tasks_done_block_title: "Виконані завдання",
   "theme_pastel_pink": "Пастельний рожевий",
 "theme_depressive_grey": "Депресивний сірий",
 "theme_cosmic_dust": "Космічний порошок",
-"home_previous_weeks_title": "Попередні тижні"
+"home_previous_weeks_title": "Попередні тижні",
+ month: "місяць",
+    months: "місяці",
+    year: "рік",
+    years: "років",
+    and: "і",
+   categories: {
+      psychology: "Психологія",
+      health: "Здоров'я",
+      development: "Розвиток",
+      play: "Гра"
+    },
+
 
 
 
@@ -520,7 +545,7 @@ home_no_articles_for_age: "Todavía no hay artículos para esta edad.",
 
 home_this_month_label: "ESTE MES",
 home_month_title_prefix: "Mes {{month}}:",
-home_month_subtitle: "Tu hijo tiene aproximadamente {{age}}.",
+home_month_subtitle: "Tu hijo tiene  {{age}}.",
 
 home_section_development_title: "Desarrollo",
 home_section_development_description: "Lo que tu bebé está aprendiendo este mes.",
@@ -582,7 +607,18 @@ tasks_done_block_title: "Tareas completadas",
   "theme_pastel_pink": "Rosa Pastel",
 "theme_depressive_grey": "Gris Depresivo",
 "theme_cosmic_dust": "Polvo Cósmico",
-"home_previous_weeks_title": "Semanas anteriores"
+"home_previous_weeks_title": "Semanas anteriores",
+ month: "mes",
+    months: "meses",
+    year: "año",
+    years: "años",
+    and: "y",
+   categories: {
+      psychology: "Psicología",
+      health: "Salud",
+      development: "Desarrollo",
+      play: "Juego"
+    }
 
 
 

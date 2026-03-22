@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -18,16 +19,24 @@ import {
   getDoc,
   setDoc,
 } from "firebase/firestore";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../theme/ThemeContext";
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { auth, db } from "../services/firebaseConfig";
 import { formatAgeMonths } from "../utils/formatAgeMonths";
-import { useTranslation } from "react-i18next";
 import { getLocalized } from "../utils/getLocalizedField";
 import { getAgeInWeeksFromBirthDate } from "../utils/getAgeInWeeksFromBirthDate";
 import { getAgeInMonthsFromBirthDate } from "../utils/getAgeInMonthsFromBirthDate";
 import { getDaysUntilNextWeek } from "../utils/getDaysUntilNextWeek";
+
+const CATEGORY_FILTERS = [
+  { key: "all", icon: "✨", labelKey: "home_feed_filter_all" },
+  { key: "development", icon: "🧠", labelKey: "home_feed_filter_development" },
+  { key: "psychology", icon: "💬", labelKey: "home_feed_filter_psychology" },
+  { key: "health", icon: "🍎", labelKey: "home_feed_filter_health" },
+  { key: "play", icon: "🎲", labelKey: "home_feed_filter_play" },
+];
 
 const STATUS_OPTIONS = [
   { value: "not_started", labelKey: "tasks_status_not_started" },
@@ -71,6 +80,7 @@ export default function TasksScreen({ navigation }) {
   const [tasksState, setTasksState] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [loadingTasks, setLoadingTasks] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const currentWeekIndex = useMemo(() => {
     if (!child?.birthDate) return 1;
@@ -165,13 +175,18 @@ export default function TasksScreen({ navigation }) {
     }
   };
 
+  const filteredTasks = tasksState.filter((item) => {
+    if (selectedCategory === "all") return true;
+    return item.category === selectedCategory;
+  });
+
   const notDoneTasks = useMemo(
-    () => tasksState.filter((t) => t.status !== "done"),
-    [tasksState]
+    () => filteredTasks.filter((t) => t.status !== "done"),
+    [filteredTasks]
   );
   const doneTasks = useMemo(
-    () => tasksState.filter((t) => t.status === "done"),
-    [tasksState]
+    () => filteredTasks.filter((t) => t.status === "done"),
+    [filteredTasks]
   );
 
   const currentNotDone = useMemo(
@@ -225,7 +240,7 @@ export default function TasksScreen({ navigation }) {
   );
 
   const allDone =
-    tasksState.length > 0 && tasksState.every((t) => t.status === "done");
+    filteredTasks.length > 0 && filteredTasks.every((t) => t.status === "done");
 
   const renderTask = ({ item, index }) => {
     const statusCfg = getStatusStyle(item.status);
@@ -238,18 +253,15 @@ export default function TasksScreen({ navigation }) {
     const isPreviousWeek = item.weekIndex < currentWeekIndex;
     const isCurrentWeek = item.weekIndex === currentWeekIndex;
 
-    // Роздільник "Нові завдання" (для поточного тижня)
     const showNewSeparator =
       isCurrentWeek &&
       item.status !== "done" &&
       (index === 0 || listData[index - 1].weekIndex !== currentWeekIndex || listData[index - 1].status === "done");
 
-    // Роздільник "Попередні завдання"
     const showPreviousSeparator =
       isPreviousWeek &&
       (index === 0 || listData[index - 1].weekIndex === currentWeekIndex);
 
-    // Роздільник "Виконані завдання"
     const isFirstDone =
       item.status === "done" &&
       (index === 0 || listData[index - 1].status !== "done");
@@ -323,7 +335,7 @@ export default function TasksScreen({ navigation }) {
                     isDone && styles.tagTextMuted,
                   ]}
                 >
-                  {item.category?.toUpperCase?.() || ""}
+                  {t(`categories.${item.category}`) || ""}
                 </Text>
 
                 <Text
@@ -412,6 +424,7 @@ export default function TasksScreen({ navigation }) {
                         >
                           {optionCfg.icon} {t(option.labelKey)}
                         </Text>
+                      
                       </TouchableOpacity>
                     );
                   })}
@@ -437,7 +450,7 @@ export default function TasksScreen({ navigation }) {
       <View style={[styles.screen, styles.center, { backgroundColor: theme.BG }]}>
         <Text style={{ color: theme.TEXT }}>{t("tasks_no_child")}</Text>
       </View>
-        );
+    );
   }
 
   if (!tasksState || tasksState.length === 0) {
@@ -532,6 +545,48 @@ export default function TasksScreen({ navigation }) {
         </Text>
       </View>
 
+      {/* ✅ ФІЛЬТРИ */}
+       <View style={styles.chipsContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsRow}
+      >
+        {CATEGORY_FILTERS.map((chip) => {
+          const isActive = selectedCategory === chip.key;
+          return (
+            <TouchableOpacity
+              key={chip.key}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isActive
+                    ? theme.CHIP_ACTIVE
+                    : theme.CHIP_BG,
+                },
+                isActive && styles.chipActive,
+              ]}
+              onPress={() => setSelectedCategory(chip.key)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.chipIcon}>{chip.icon}</Text>
+              <Text
+                style={[
+                  styles.chipLabel,
+                  {
+                    color: isActive ? "#FFFFFF" : theme.TEXT,
+                    fontWeight: isActive ? "600" : "400",
+                  },
+                  isActive && styles.chipLabelActive,
+                ]}
+              >
+                {t(chip.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+</View>
       <FlatList
         data={listData}
         keyExtractor={(item) => item.id}
@@ -588,6 +643,38 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: 4,
     fontSize: 14,
+  },
+  chipsContainer: {
+    height: 60, 
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  chipsRow: {
+    paddingVertical: 4,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    marginRight: 8,
+  },
+  chipIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  chipLabel: {
+    fontSize: 14,
+  },
+  chipLabelActive: {
+    fontWeight: "600",
+  },
+  chipActive: {
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   listContent: {
     paddingHorizontal: 16,
