@@ -12,6 +12,7 @@ import { initI18n } from "./src/i18n";
 import { auth } from "./src/services/firebaseConfig";
 import { useTheme } from "./src/theme/ThemeContext";
 import { ThemeProvider } from "./src/theme/ThemeContext";
+import { seedArticlesOnce } from "./src/dev/seedContent";
 
 
 
@@ -143,7 +144,9 @@ export default function App() {
   };
 
   loadLanguageAndInit();
+  // seedArticlesOnce();
 }, [user]);
+
 
 
 if (initializing || !i18nReady) {

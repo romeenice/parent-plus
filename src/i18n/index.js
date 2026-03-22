@@ -190,7 +190,9 @@ tasks_previous_tasks_title: "Previous tasks",
   "tasks_new_tasks_in": "New tasks coming in {{days}} days",
   "theme_pastel_pink": "Pastel Pink",
 "theme_depressive_grey": "Depressive Grey",
-"theme_cosmic_dust": "Cosmic Dust"
+"theme_cosmic_dust": "Cosmic Dust",
+"home_previous_weeks_title": "Previous weeks"
+
 
 
 
@@ -381,7 +383,8 @@ tasks_done_block_title: "Виконані завдання",
   "tasks_new_tasks_in": "До нових завдань залишилось {{days}} днів",
   "theme_pastel_pink": "Пастельний рожевий",
 "theme_depressive_grey": "Депресивний сірий",
-"theme_cosmic_dust": "Космічний порошок"
+"theme_cosmic_dust": "Космічний порошок",
+"home_previous_weeks_title": "Попередні тижні"
 
 
 
@@ -578,7 +581,9 @@ tasks_done_block_title: "Tareas completadas",
   "tasks_new_tasks_in": "Nuevas tareas en {{days}} días",
   "theme_pastel_pink": "Rosa Pastel",
 "theme_depressive_grey": "Gris Depresivo",
-"theme_cosmic_dust": "Polvo Cósmico"
+"theme_cosmic_dust": "Polvo Cósmico",
+"home_previous_weeks_title": "Semanas anteriores"
+
 
 
     },

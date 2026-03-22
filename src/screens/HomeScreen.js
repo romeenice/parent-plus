@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.js
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
@@ -165,17 +164,26 @@ export default function HomeScreen({ navigation }) {
         };
       });
 
+      // 🔹 тільки останні 8 тижнів
+      const currentWeek = ageInWeeks;
       const WEEKS_WINDOW = 8;
-      const visibleItems = items.filter((item) => {
-        if (!item.week) return true;
+      const minWeek = Math.max(1, currentWeek - WEEKS_WINDOW + 1);
 
-        const maxWeek = ageInWeeks;
-        const minWeek = Math.max(1, maxWeek - WEEKS_WINDOW + 1);
-
-        return item.week >= minWeek && item.week <= maxWeek;
+      const windowItems = items.filter((item) => {
+        if (!item.week) return false; // статті без weekIndex ховаємо
+        return item.week >= minWeek && item.week <= currentWeek;
       });
 
-      visibleItems.sort((a, b) => {
+      // 🔹 всередині вікна ділимо на поточний тиждень і попередні
+      const newItems = windowItems.filter(
+        (item) => item.week === currentWeek
+      );
+
+      const previousItems = windowItems.filter(
+        (item) => item.week < currentWeek
+      );
+
+      const sortFn = (a, b) => {
         if (a.isRead === b.isRead) {
           if (a.week === b.week) {
             return a.order - b.order;
@@ -183,7 +191,12 @@ export default function HomeScreen({ navigation }) {
           return a.week - b.week;
         }
         return a.isRead ? 1 : -1;
-      });
+      };
+
+      newItems.sort(sortFn);
+      previousItems.sort(sortFn);
+
+      const visibleItems = [...newItems, ...previousItems];
 
       setFeedItems(visibleItems);
     } catch (e) {
@@ -194,14 +207,63 @@ export default function HomeScreen({ navigation }) {
     }
   }, [userId, i18n.language, ageInWeeks]);
 
+  // Оновлення тільки read статусу без повного перезавантаження
+  const refreshArticleStates = useCallback(async () => {
+    if (!userId || feedItems.length === 0) return;
+
+    try {
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+      const currentChildId = userSnap.exists()
+        ? userSnap.data().currentChildId
+        : null;
+
+      if (!currentChildId) return;
+
+      const statesRef = collection(
+        db,
+        "users",
+        userId,
+        "children",
+        currentChildId,
+        "articleStates"
+      );
+      const snapStates = await getDocs(statesRef);
+      const statesById = {};
+      snapStates.forEach((d) => {
+        const data = d.data() || {};
+        statesById[d.id] = {
+          isRead: !!data.isRead,
+          readAt: data.readAt || null,
+        };
+      });
+
+      setFeedItems((prevItems) =>
+        prevItems.map((item) => {
+          const state = statesById[item.id];
+          if (state) {
+            return { ...item, isRead: state.isRead, readAt: state.readAt };
+          }
+          return item;
+        })
+      );
+    } catch (e) {
+      console.log("Error refreshing article states", e);
+    }
+  }, [userId, feedItems.length]);
+
+  // Початкове завантаження
   useEffect(() => {
     loadFeed();
   }, [loadFeed]);
 
+  // При поверненні - оновлюємо тільки статуси (без loading screen)
   useFocusEffect(
     useCallback(() => {
-      loadFeed();
-    }, [loadFeed])
+      if (feedItems.length > 0) {
+        refreshArticleStates();
+      }
+    }, [refreshArticleStates, feedItems.length])
   );
 
   const handleToggleReadStatus = async (item, newIsRead) => {
@@ -247,8 +309,8 @@ export default function HomeScreen({ navigation }) {
 
   if (loading || loadingFeed) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center, { backgroundColor: theme.BG }]}>
+        <ActivityIndicator size="large" color={theme.PRIMARY} />
       </View>
     );
   }
@@ -275,9 +337,36 @@ export default function HomeScreen({ navigation }) {
     if (selectedCategory === "all") return true;
     return item.category === selectedCategory;
   });
+// статті поточного тижня
+const currentWeek = ageInWeeks;
 
-  const unreadItems = filteredFeed.filter((item) => !item.isRead);
-  const readItems = filteredFeed.filter((item) => item.isRead);
+// усе, що тільки цього тижня
+const currentWeekItems = filteredFeed.filter(
+  (item) => item.week === currentWeek
+);
+
+// попередні тижні (в межах останніх 8 тижнів, бо loadFeed вже обрізає)
+const previousWeekItems = filteredFeed.filter(
+  (item) => item.week < currentWeek
+);
+
+// непрочитані попередні тижні (для секції "Попередні тижні")
+const previousWeekUnreadItems = previousWeekItems.filter(
+  (item) => !item.isRead
+);
+
+// від більшого тижня до меншого
+const previousWeekUnreadItemsSorted = [...previousWeekUnreadItems].sort(
+  (a, b) => b.week - a.week
+);
+
+// тепер «нові/прочитані» рахуємо так:
+// "нові" – тільки непрочитані статті поточного тижня
+const unreadItems = currentWeekItems.filter((item) => !item.isRead);
+
+// "прочитані" – усі прочитані статті за останні 8 тижнів (і поточний, і попередні)
+const readItems = filteredFeed.filter((item) => item.isRead);
+
 
   const handleOpenArticle = (item) => {
     navigation.navigate("ArticleDetails", {
@@ -308,6 +397,7 @@ export default function HomeScreen({ navigation }) {
     const title = item.title;
     const statusCfg = getStatusStyle(item.isRead ? "read" : "new");
     const isOpen = openDropdownId === item.id;
+    
 
     return (
       <TouchableOpacity
@@ -391,7 +481,7 @@ export default function HomeScreen({ navigation }) {
                       <Text
                         style={[
                           styles.dropdownItemText,
-                           { color: theme.TEXT },
+                          { color: theme.TEXT },
                           isActive && {
                             color: theme.PRIMARY,
                             fontWeight: "700",
@@ -466,40 +556,40 @@ export default function HomeScreen({ navigation }) {
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-       <View style={styles.feedHeaderBlock}>
-  <Text style={[styles.feedTitle, { color: theme.TEXT }]}>
-    {t("home_feed_title")}
-  </Text>
-  
-  <View style={[styles.ageBlock, 
-     { backgroundColor: theme.STATUS_NEW_BG,
-       borderRadius: 5
-      }]
-  }>
-    <Text style={[styles.ageBlockText, { color: theme.STATUS_NEW_TEXT }]}>
-      {t("home_month_subtitle", {
-        age: formatAgeMonths(childAgeMonths),
-      })}
-    </Text>
-  </View>
-</View>
+        <View style={styles.feedHeaderBlock}>
+          <Text style={[styles.feedTitle, { color: theme.TEXT }]}>
+            {t("home_feed_title")}
+          </Text>
 
-
+          <View style={[
+            styles.ageBlock,
+            {
+              backgroundColor: theme.STATUS_NEW_BG,
+              borderRadius: 5,
+            },
+          ]}>
+            <Text style={[styles.ageBlockText, { color: theme.STATUS_NEW_TEXT }]}>
+              {t("home_month_subtitle", {
+                age: formatAgeMonths(childAgeMonths),
+              })}
+            </Text>
+          </View>
+        </View>
 
         {/* Банер показується тільки якщо є непрочитані статті */}
         {unreadItems.length > 0 && (
-  <View style={[styles.banner, { backgroundColor: theme.BANNER_BG }]}>
-    <Text style={styles.bannerEmoji}>✨</Text>
-    <View style={{ flex: 1 }}>
-      <Text style={[styles.bannerTitle, { color: theme.BANNER_TEXT }]}>
-        {t("home_this_week_new_articles")}
-      </Text>
-      <Text style={[styles.bannerText, { color: theme.BANNER_TEXT }]}>
-        {t("home_this_week_new_articles_subtitle")}
-      </Text>
-    </View>
-  </View>
-)}
+          <View style={[styles.banner, { backgroundColor: theme.BANNER_BG }]}>
+            <Text style={styles.bannerEmoji}>✨</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bannerTitle, { color: theme.BANNER_TEXT }]}>
+                {t("home_this_week_new_articles")}
+              </Text>
+              <Text style={[styles.bannerText, { color: theme.BANNER_TEXT }]}>
+                {t("home_this_week_new_articles_subtitle")}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <ScrollView
           horizontal
@@ -511,9 +601,15 @@ export default function HomeScreen({ navigation }) {
             return (
               <TouchableOpacity
                 key={chip.key}
-                style={[styles.chip,{
-          backgroundColor: isActive ? theme.CHIP_ACTIVE : theme.CHIP_BG,
-        }, isActive && styles.chipActive]}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: isActive
+                      ? theme.CHIP_ACTIVE
+                      : theme.CHIP_BG,
+                  },
+                  isActive && styles.chipActive,
+                ]}
                 onPress={() => setSelectedCategory(chip.key)}
                 activeOpacity={0.9}
               >
@@ -522,9 +618,9 @@ export default function HomeScreen({ navigation }) {
                   style={[
                     styles.chipLabel,
                     {
-            color: isActive ? "#FFFFFF" : theme.TEXT,
-            fontWeight: isActive ? "600" : "400",
-          },
+                      color: isActive ? "#FFFFFF" : theme.TEXT,
+                      fontWeight: isActive ? "600" : "400",
+                    },
                     isActive && styles.chipLabelActive,
                   ]}
                 >
@@ -547,6 +643,14 @@ export default function HomeScreen({ navigation }) {
             unreadItems.map(renderArticleCard)
           )}
         </View>
+        {previousWeekUnreadItemsSorted.length > 0 && (
+          <View style={[styles.sectionBlock, styles.previousWeeksSection]}>
+            <Text style={[styles.sectionTitle, { color: theme.TEXT }]}>
+              {t("home_previous_weeks_title")}
+            </Text>
+            {previousWeekUnreadItemsSorted.map(renderArticleCard)}
+          </View>
+        )}
 
         <View style={styles.sectionBlock}>
           <Text style={[styles.sectionTitle, { color: theme.TEXT }]}>
@@ -554,18 +658,18 @@ export default function HomeScreen({ navigation }) {
           </Text>
           {readItems.length === 0 ? (
             <Text style={[styles.sectionEmptyText, { color: theme.SECONDARY }]}>
-              {t
-("home_no_read_articles")}
+              {t("home_no_read_articles")}
             </Text>
           ) : (
             readItems.map(renderArticleCard)
           )}
+
+         
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -583,7 +687,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingBottom: 8,
-     paddingTop: 16,
+    paddingTop: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -609,34 +713,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     marginBottom: 4,
-  
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 9999,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    position: "relative",
-  },
-  iconText: {
-    fontSize: 18,
-  },
-  badgeDot: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 9999,
   },
   content: {
     flex: 1,
@@ -646,14 +722,25 @@ const styles = StyleSheet.create({
   feedHeaderBlock: {
     marginTop: 8,
     marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   feedTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "800",
+    flex: 1,
   },
-  feedSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
+  ageBlock: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginLeft: 12,
+  },
+  ageBlockText: {
+    fontSize: 13,
+    fontWeight: "600",
+    whiteSpace: "nowrap",
   },
   banner: {
     flexDirection: "row",
@@ -665,7 +752,6 @@ const styles = StyleSheet.create({
   bannerEmoji: {
     fontSize: 24,
     marginRight: 12,
-
   },
   bannerTitle: {
     fontSize: 14,
@@ -724,7 +810,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 4,
   },
-    statusWrapper: {
+  statusWrapper: {
     marginLeft: 12,
     alignItems: "flex-end",
     position: "relative",
@@ -740,7 +826,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   dropdown: {
-     position: "absolute",
+    position: "absolute",
     top: -5,
     right: 0,
     marginTop: 0,
@@ -756,11 +842,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-
   dropdownItemText: {
     fontSize: 13,
   },
-
   articleCategoryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -787,7 +871,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-    countdownBlock: {
+  countdownBlock: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
@@ -823,6 +907,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     whiteSpace: "nowrap",
   },
+previousWeeksSection: {
+  marginTop: 30,
+  marginBottom: 10,
+},
 
 
 });
