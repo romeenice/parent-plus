@@ -202,7 +202,18 @@ tasks_previous_tasks_title: "Previous tasks",
       health: "Health",
       development: "Development",
       play: "Play"
-    }
+    },
+    "settings_help_title": "Help & Support",
+"help_name_placeholder": "Your name",
+"help_message_placeholder": "Describe your issue...",
+"help_send_button": "Send",
+"help_fill_all_fields": "Please fill in all fields",
+"help_sent_success": "Thank you! Your message has been sent",
+"help_sent_error": "Error sending message. Please try again",
+"common_sending": "Sending...",
+"success": "Success",
+"error": "Error",
+
 
 
 
@@ -409,6 +420,17 @@ tasks_done_block_title: "Виконані завдання",
       development: "Розвиток",
       play: "Гра"
     },
+    "settings_help_title": "Допомога та підтримка",
+"help_name_placeholder": "Ваше ім'я",
+"help_message_placeholder": "Опишіть проблему...",
+"help_send_button": "Відправити",
+"help_fill_all_fields": "Будь ласка, заповніть усі поля",
+"help_sent_success": "Дякуємо! Ваше повідомлення відправлено",
+"help_sent_error": "Помилка відправки. Спробуйте ще раз",
+"common_sending": "Відправлення...",
+"success": "Успіх",
+"error": "Помилка",
+
 
 
 
@@ -618,7 +640,19 @@ tasks_done_block_title: "Tareas completadas",
       health: "Salud",
       development: "Desarrollo",
       play: "Juego"
-    }
+    },
+
+    "settings_help_title": "Ayuda y soporte",
+"help_name_placeholder": "Tu nombre",
+"help_message_placeholder": "Describe tu problema...",
+"help_send_button": "Enviar",
+"help_fill_all_fields": "Por favor, completa todos los campos",
+"help_sent_success": "¡Gracias! Tu mensaje ha sido enviado",
+"help_sent_error": "Error al enviar el mensaje. Inténtalo de nuevo",
+"common_sending": "Enviando...",
+"success": "Éxito",
+"error": "Error",
+
 
 
 

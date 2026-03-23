@@ -3,6 +3,11 @@
 # dependencies
 node_modules/
 
+# Functions node_modules
+functions/node_modules/
+functions/.env
+functions/lib/
+
 secrets.local.js
 .env
 
@@ -43,3 +48,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase config (якщо є секрети)
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+
+# Logs
+*.log
+npm-debug.log*

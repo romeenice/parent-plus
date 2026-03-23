@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Switch,
+  TextInput,
 } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 import { THEMES } from "../theme/colors";
@@ -45,6 +46,10 @@ export default function ProfileScreen({ navigation }) {
   const [selectedLanguage, setSelectedLanguage] = React.useState("en");
   const [languageOpen, setLanguageOpen] = React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
+  const [helpModalOpen, setHelpModalOpen] = React.useState(false);
+  const [helpName, setHelpName] = React.useState("");
+  const [helpMessage, setHelpMessage] = React.useState("");
+  const [helpLoading, setHelpLoading] = React.useState(false);
 
   const currentLanguage = LANGUAGE_OPTIONS.find(
     (l) => l.code === selectedLanguage
@@ -104,6 +109,49 @@ export default function ProfileScreen({ navigation }) {
       console.log("Error saving language", e);
     }
   };
+
+const handleSendHelp = async () => {
+  if (!helpName.trim() || !helpMessage.trim()) {
+    Alert.alert(t("error"), t("help_fill_all_fields"));
+    return;
+  }
+
+  setHelpLoading(true);
+
+  try {
+    
+    const response = await fetch(
+      "https://sendhelpemail-nasp6k5yxa-uc.a.run.app",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          userName: helpName,
+          message: helpMessage,
+          userEmail: auth.currentUser?.email,
+        }),
+      }
+    );
+    const data = await response.json();
+
+    if (response.ok) {
+      Alert.alert(t("success"), t("help_sent_success"));
+      setHelpName("");
+      setHelpMessage("");
+      setHelpModalOpen(false);
+    } else {
+      Alert.alert(t("error"), t("help_sent_error"));
+    }
+  } catch (e) {
+    Alert.alert(t("error"), t("help_sent_error"));
+  } finally {
+    setHelpLoading(false);
+  }
+};
+
 
   const handleLogout = async () => {
     try {
@@ -213,7 +261,6 @@ export default function ProfileScreen({ navigation }) {
       </TouchableOpacity>
     );
   };
-
   return (
     <SafeAreaView
       style={[styles.screen, { backgroundColor: theme.BG }]}
@@ -230,7 +277,7 @@ export default function ProfileScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <TouchableOpacity
-          style={[styles.addAnotherButtonTop, { backgroundColor: theme.PRIMARY,shadowColor: theme.PRIMARY, }]}
+          style={[styles.addAnotherButtonTop, { backgroundColor: theme.PRIMARY, shadowColor: theme.PRIMARY }]}
           onPress={handleAddChild}
         >
           <Text style={styles.addAnotherButtonTopText}>
@@ -274,77 +321,75 @@ export default function ProfileScreen({ navigation }) {
             />
           </View>
 
-          {/* App Theme */}
-<View>
-  <TouchableOpacity
-    style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
-    onPress={() => setThemeOpen((prev) => !prev)}
-  >
-    <View>
-      <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
-        {t("settings_theme_title")}
-      </Text>
-      <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
-        {t(THEMES[themeKey]?.name || "theme_pastel_pink")}
-      </Text>
-    </View>
-    <Text style={[styles.chevron, { color: theme.SECONDARY }]}>
-      {themeOpen  ? "˄" : "˅"}
-    </Text>
-  </TouchableOpacity>
-
-  {themeOpen  && (
-    <View
-      style={[
-        styles.themeDropdown,
-        {
-          backgroundColor: theme.SECTION_BG,
-          borderColor: theme.BORDER,
-        },
-      ]}
-    >
-      {Object.entries(THEMES).map(([key, themeObj]) => {
-        const isActive = themeKey === key;
-        return (
-          <TouchableOpacity
-            key={key}
-            style={[
-              styles.themeDropdownItem,
-              isActive && {
-                backgroundColor: `${theme.PRIMARY}20`,
-              },
-            ]}
-            onPress={() => {
-              changeTheme(key);
-              setThemeOpen(false);
-            }}
-          >
-            <View
-              style={[
-                styles.themeDropdownPreview,
-                { backgroundColor: themeObj.PRIMARY },
-              ]}
-            />
-            <Text
-              style={[
-                styles.themeDropdownLabel,
-                { color: theme.TEXT },
-                isActive && {
-                  fontWeight: "700",
-                  color: theme.PRIMARY,
-                },
-              ]}
+          <View>
+            <TouchableOpacity
+              style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
+              onPress={() => setThemeOpen((prev) => !prev)}
             >
-               {t(themeObj.name)}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  )}
-</View>
+              <View>
+                <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
+                  {t("settings_theme_title")}
+                </Text>
+                <Text style={[styles.settingsSubtitle, { color: theme.SECONDARY }]}>
+                  {t(THEMES[themeKey]?.name || "theme_pastel_pink")}
+                </Text>
+              </View>
+              <Text style={[styles.chevron, { color: theme.SECONDARY }]}>
+                {themeOpen ? "˄" : "˅"}
+              </Text>
+            </TouchableOpacity>
 
-          {/* Language */}
+            {themeOpen && (
+              <View
+                style={[
+                  styles.themeDropdown,
+                  {
+                    backgroundColor: theme.SECTION_BG,
+                    borderColor: theme.BORDER,
+                  },
+                ]}
+              >
+                {Object.entries(THEMES).map(([key, themeObj]) => {
+                  const isActive = themeKey === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.themeDropdownItem,
+                        isActive && {
+                          backgroundColor: `${theme.PRIMARY}20`,
+                        },
+                      ]}
+                      onPress={() => {
+                        changeTheme(key);
+                        setThemeOpen(false);
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.themeDropdownPreview,
+                          { backgroundColor: themeObj.PRIMARY },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.themeDropdownLabel,
+                          { color: theme.TEXT },
+                          isActive && {
+                            fontWeight: "700",
+                            color: theme.PRIMARY,
+                          },
+                        ]}
+                      >
+                        {t(themeObj.name)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
           <View>
             <TouchableOpacity
               style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
@@ -410,6 +455,7 @@ export default function ProfileScreen({ navigation }) {
 
           <TouchableOpacity
             style={[styles.settingsRow, { borderTopColor: theme.BORDER }]}
+            onPress={() => setHelpModalOpen(true)}
           >
             <View>
               <Text style={[styles.settingsTitle, { color: theme.TEXT }]}>
@@ -445,6 +491,72 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {helpModalOpen && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modal, { backgroundColor: theme.CARD_BG }]}>
+            <Text style={[styles.modalTitle, { color: theme.TEXT }]}>
+              {t("settings_help_title")}
+            </Text>
+
+            <TextInput
+              style={[
+                styles.helpInput,
+                {
+                  backgroundColor: theme.SECTION_BG,
+                  color: theme.TEXT,
+                  borderColor: theme.BORDER,
+                },
+              ]}
+              placeholder={t("help_name_placeholder")}
+              placeholderTextColor={theme.SECONDARY}
+              value={helpName}
+              onChangeText={setHelpName}
+            />
+
+            <TextInput
+              style={[
+                styles.helpMessageInput,
+                {
+                  backgroundColor: theme.SECTION_BG,
+                  color: theme.TEXT,
+                  borderColor: theme.BORDER,
+                },
+              ]}
+              placeholder={t("help_message_placeholder")}
+              placeholderTextColor={theme.SECONDARY}
+              value={helpMessage}
+              onChangeText={setHelpMessage}
+              multiline
+              numberOfLines={5}
+            />
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setHelpModalOpen(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.TEXT }]}>
+                  {t("common_cancel")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: theme.PRIMARY },
+                ]}
+                onPress={handleSendHelp}
+                disabled={helpLoading}
+              >
+                <Text style={styles.sendButtonText}>
+                  {helpLoading ? t("common_sending") : t("help_send_button")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -485,12 +597,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
   childrenCardsWrapper: {
     marginBottom: 20,
     gap: 12,
   },
-
   childCard: {
     padding: 16,
     borderRadius: 24,
@@ -553,7 +663,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#EF4444",
   },
-
   section: {
     marginBottom: 16,
     padding: 16,
@@ -569,7 +678,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     letterSpacing: 1,
   },
-
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -588,7 +696,6 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: 18,
   },
-
   themeDropdown: {
     marginTop: 4,
     borderRadius: 16,
@@ -610,7 +717,6 @@ const styles = StyleSheet.create({
   themeDropdownLabel: {
     fontSize: 14,
   },
-
   languageDropdown: {
     marginTop: 4,
     borderRadius: 16,
@@ -630,7 +736,6 @@ const styles = StyleSheet.create({
   languageLabel: {
     fontSize: 14,
   },
-
   logoutRow: {
     marginTop: 8,
     alignItems: "center",
@@ -640,4 +745,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modal: {
+     width: "85%",
+    padding: 20,
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  helpInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    fontSize: 14,
+  },
+  helpMessageInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlignVertical: "top",
+    minHeight: 100,
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#E2E8F0",
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  sendButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });
+
