@@ -3,11 +3,11 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StatusBar } from "react-native";
+import { StatusBar, ActivityIndicator, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "./src/services/firebaseConfig";
 import { initI18n } from "./src/i18n";
 import { auth } from "./src/services/firebaseConfig";
@@ -18,7 +18,6 @@ import HomeScreen from "./src/screens/HomeScreen";
 import ArticleDetailsScreen from "./src/screens/ArticleDetailsScreen";
 import TasksScreen from "./src/screens/TasksScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import AppStartScreen from "./src/screens/AppStartScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import AddChildScreen from "./src/screens/AddChildScreen";
 import AuthScreen from "./src/screens/AuthScreen";
@@ -100,56 +99,97 @@ function MainTabs() {
 }
 
 function AppContent() {
-  const { themeKey } = useTheme();
+  const { theme, themeKey } = useTheme();
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
-  const [i18nReady, setI18nReady] = useState(false);
-  const [appLanguage, setAppLanguage] = useState("en");
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const [hasChild, setHasChild] = useState(false);
+  const [checkingData, setCheckingData] = useState(true); // NEW
   const [statusBarStyle, setStatusBarStyle] = useState("dark-content");
 
-  // ✅ Оновлюємо status bar коли змінюється тема
   useEffect(() => {
-    const newStyle = themeKey === "pastel" ? "dark-content" : "light-content";
+    const newStyle = themeKey === "pastelPink" ? "dark-content" : "light-content";
     setStatusBarStyle(newStyle);
   }, [themeKey]);
 
+  // Initialize i18n
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser || null);
-      setInitializing(false);
-    });
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    const loadLanguageAndInit = async () => {
+    const initializeI18n = async () => {
       try {
-        let lang = "en";
-
-        if (user) {
-          const userRef = doc(db, "users", user.uid);
-          const snap = await getDoc(userRef);
-          if (snap.exists() && snap.data().language) {
-            lang = snap.data().language;
-          }
-        }
-
-        await initI18n(lang);
-        setAppLanguage(lang);
-        setI18nReady(true);
-      } catch (e) {
-        console.log("Error init i18n", e);
         await initI18n("en");
-        setAppLanguage("en");
-        setI18nReady(true);
+      } catch (e) {
+        console.error("Error initializing i18n:", e);
       }
     };
+    
+    initializeI18n();
+  }, []);
 
-    loadLanguageAndInit();
+  // Auth listener
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser || null);
+      
+      if (firebaseUser) {
+        const { getDoc } = await import("firebase/firestore");
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists() && userSnap.data().language) {
+            await initI18n(userSnap.data().language);
+          }
+        } catch (e) {
+          console.error("Error loading language:", e);
+        }
+      }
+      
+      setInitializing(false);
+    });
+    
+    return unsubAuth;
+  }, []);
+
+  // REALTIME listener for user document changes
+  useEffect(() => {
+    if (!user) {
+      setHasSeenOnboarding(false);
+      setHasChild(false);
+      setCheckingData(false);
+      return;
+    }
+
+    setCheckingData(true); // Start checking
+
+    const userRef = doc(db, "users", user.uid);
+    
+    // Listen to user document changes in REALTIME
+    const unsubUser = onSnapshot(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.data();
+        setHasSeenOnboarding(userData.hasSeenOnboarding || false);
+        setHasChild(!!userData.currentChildId);
+        
+       
+      } else {
+        setHasSeenOnboarding(false);
+        setHasChild(false);
+      }
+      setCheckingData(false); // Done checking
+    }, (error) => {
+      console.error("Error listening to user doc:", error);
+      setCheckingData(false);
+    });
+
+    return unsubUser;
   }, [user]);
 
-  if (initializing || !i18nReady) {
-    return null;
+  // Show loading while checking
+  if (initializing || checkingData) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.BG }}>
+        <ActivityIndicator size="large" color={theme.PRIMARY} />
+      </View>
+    );
   }
 
   return (
@@ -162,17 +202,16 @@ function AppContent() {
 
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {user ? (
-            <>
-              <Stack.Screen name="MainTabs" component={MainTabs} />
-              <Stack.Screen name="AppStart" component={AppStartScreen} />
-              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-              <Stack.Screen name="AddChild" component={AddChildScreen} />
-              <Stack.Screen name="ArticleDetails" component={ArticleDetailsScreen} />
-            </>
+          {!user ? (
+            <Stack.Screen name="Auth" component={AuthScreen} />
+          ) : !hasSeenOnboarding ? (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          ) : !hasChild ? (
+            <Stack.Screen name="AddChild" component={AddChildScreen} />
           ) : (
             <>
-              <Stack.Screen name="Auth" component={AuthScreen} />
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="AddChild" component={AddChildScreen} />
             </>
           )}
         </Stack.Navigator>

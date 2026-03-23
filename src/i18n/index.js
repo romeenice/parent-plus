@@ -213,8 +213,41 @@ tasks_previous_tasks_title: "Previous tasks",
 "common_sending": "Sending...",
 "success": "Success",
 "error": "Error",
-
-
+"auth_google_signin": "Continue with Google",
+  "auth_google_signin_failed": "Failed to sign in with Google",
+  "auth_or": "OR",
+   "onboarding_skip": "Skip",
+  "onboarding_next": "Next",
+  "onboarding_get_started": "Get Started",
+  
+  "onboarding_slide1_title": "Welcome to Parents+",
+  "onboarding_slide1_description": "Your personal assistant for baby care. Get weekly articles and tips tailored to your child's age.",
+  
+  "onboarding_slide2_title": "Helpful Weekly Articles",
+  "onboarding_slide2_description": "Learn about development, health, and psychology. Everything adapted to your baby's current age.",
+  
+  "onboarding_slide3_title": "Tasks & Reminders",
+  "onboarding_slide3_description": "Don't miss important moments: doctor visits, vaccinations, developmental milestones.",
+   "onboarding_slide1_title": "Weekly Parenting Guide",
+  "onboarding_slide1_description": "Get personalized articles about development, health, and psychology tailored to your baby's age.",
+  
+  "onboarding_feature1_articles": "Expert articles every week",
+  "onboarding_feature1_categories": "4 categories: psychology, health, development, play",
+  "onboarding_feature1_languages": "3 languages: Ukrainian, English, Spanish",
+  
+  "onboarding_slide2_title": "Never Miss Important Moments",
+  "onboarding_slide2_description": "Keep track of doctor visits, vaccinations, and important developmental milestones for your child.",
+  
+  "onboarding_feature2_reminders": "Tasks and reminders",
+  "onboarding_feature2_checkups": "Medical checkup tracking",
+  "onboarding_feature2_milestones": "Baby development calendar",
+  
+  "onboarding_slide3_title": "Track Your Baby's Journey",
+  "onboarding_slide3_description": "Personalized experience for your family. Everything you need to know about your child's first years.",
+  
+  "onboarding_feature3_tracking": "Milestone tracking",
+  "onboarding_feature3_personalized": "Personalized content and themes",
+  "onboarding_feature3_private": "Private and secure data"
 
 
 
@@ -430,8 +463,41 @@ tasks_done_block_title: "Виконані завдання",
 "common_sending": "Відправлення...",
 "success": "Успіх",
 "error": "Помилка",
-
-
+"auth_google_signin": "Увійти через Google",
+  "auth_google_signin_failed": "Не вдалося увійти через Google",
+  "auth_or": "АБО",
+  "onboarding_skip": "Пропустити",
+  "onboarding_next": "Далі",
+  "onboarding_get_started": "Почати",
+  
+  "onboarding_slide1_title": "Вітаємо в Parents+",
+  "onboarding_slide1_description": "Ваш персональний помічник у догляді за малюком. Отримуйте щотижневі статті та поради відповідно до віку вашої дитини.",
+  
+  "onboarding_slide2_title": "Корисні статті щотижня",
+  "onboarding_slide2_description": "Дізнавайтеся про розвиток, здоров'я та психологію малюка. Все адаптовано під поточний вік вашої дитини.",
+  
+  "onboarding_slide3_title": "Завдання та нагадування",
+  "onboarding_slide3_description": "Не пропускайте важливі моменти: візити до лікаря, вакцинації, етапи розвитку.",
+   "onboarding_slide1_title": "Щотижневі поради для батьків",
+  "onboarding_slide1_description": "Отримуйте персоналізовані статті про розвиток, здоров'я та психологію малюка відповідно до його віку.",
+  
+  "onboarding_feature1_articles": "Експертні статті кожного тижня",
+  "onboarding_feature1_categories": "4 категорії: психологія, здоров'я, розвиток, ігри",
+  "onboarding_feature1_languages": "3 мови: українська, англійська, іспанська",
+  
+  "onboarding_slide2_title": "Не пропустіть важливі моменти",
+  "onboarding_slide2_description": "Тримайте під контролем візити до лікаря, вакцинації та важливі етапи розвитку вашої дитини.",
+  
+  "onboarding_feature2_reminders": "Завдання та нагадування",
+  "onboarding_feature2_checkups": "Відстеження медичних оглядів",
+  "onboarding_feature2_milestones": "Календар розвитку малюка",
+  
+  "onboarding_slide3_title": "Відстежуйте розвиток малюка",
+  "onboarding_slide3_description": "Персоналізований досвід для вашої родини. Все що потрібно знати про перші роки життя дитини.",
+  
+  "onboarding_feature3_tracking": "Відстеження віх розвитку",
+  "onboarding_feature3_personalized": "Персоналізований контент та теми",
+  "onboarding_feature3_private": "Приватні та безпечні дані"
 
 
 
@@ -652,7 +718,41 @@ tasks_done_block_title: "Tareas completadas",
 "common_sending": "Enviando...",
 "success": "Éxito",
 "error": "Error",
+"auth_google_signin": "Continuar con Google",
+  "auth_google_signin_failed": "Error al iniciar sesión con Google",
+  "auth_or": "O",
+   "onboarding_skip": "Omitir",
+  "onboarding_next": "Siguiente",
+  "onboarding_get_started": "Comenzar",
+  
+  "onboarding_slide1_title": "Bienvenido a Parents+",
+  "onboarding_slide1_description": "Tu asistente personal para el cuidado del bebé. Obtén artículos y consejos semanales adaptados a la edad de tu hijo.",
+  
+  "onboarding_slide2_title": "Artículos Útiles Semanales",
+  "onboarding_slide2_description": "Aprende sobre desarrollo, salud y psicología. Todo adaptado a la edad actual de tu bebé.",
+  
+  "onboarding_slide3_title": "Tareas y Recordatorios",
+  "onboarding_slide3_description": "No te pierdas momentos importantes: visitas al médico, vacunas, hitos del desarrollo.",
 
+  "onboarding_slide1_title": "Guía Semanal para Padres",
+  "onboarding_slide1_description": "Obtén artículos personalizados sobre desarrollo, salud y psicología adaptados a la edad de tu bebé.",
+  
+  "onboarding_feature1_articles": "Artículos expertos cada semana",
+  "onboarding_feature1_categories": "4 categorías: psicología, salud, desarrollo, juego",
+  "onboarding_feature1_languages": "3 idiomas: ucraniano, inglés, español",
+  "onboarding_slide2_title": "No Te Pierdas Momentos Importantes",
+  "onboarding_slide2_description": "Mantén un registro de visitas al médico, vacunas e hitos importantes del desarrollo de tu hijo.",
+  
+  "onboarding_feature2_reminders": "Tareas y recordatorios",
+  "onboarding_feature2_checkups": "Seguimiento de chequeos médicos",
+  "onboarding_feature2_milestones": "Calendario de desarrollo del bebé",
+  
+  "onboarding_slide3_title": "Sigue el Viaje de Tu Bebé",
+  "onboarding_slide3_description": "Experiencia personalizada para tu familia. Todo lo que necesitas saber sobre los primeros años de tu hijo.",
+  
+  "onboarding_feature3_tracking": "Seguimiento de hitos",
+  "onboarding_feature3_personalized": "Contenido y temas personalizados",
+  "onboarding_feature3_private": "Datos privados y seguros"
 
 
 

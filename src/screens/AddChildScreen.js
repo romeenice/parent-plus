@@ -8,19 +8,20 @@ import {
   TouchableOpacity,
 } from "react-native";
 import {
-  getFirestore,
   collection,
   addDoc,
   serverTimestamp,
   doc,
   updateDoc,
+  setDoc,
+  getDoc,
 } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../theme/ThemeContext";
-import { auth } from "../services/firebaseConfig";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function AddChildScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -54,49 +55,82 @@ export default function AddChildScreen({ navigation, route }) {
 
     try {
       setSaving(true);
-      const db = getFirestore();
+      const user = auth.currentUser;
+      if (!user) {
+        console.log("No auth user");
+        return;
+      }
 
       if (isEdit && editingChildId) {
-        const childRef = doc(db, "children", editingChildId);
+        // Edit existing child
+        const childRef = doc(db, "users", user.uid, "children", editingChildId);
         await updateDoc(childRef, {
           name,
           birthDate,
           gender: gender || null,
         });
-      } else {
-        const childrenRef = collection(db, "children");
 
-        const user = auth.currentUser;
-        if (!user) {
-          console.log("No auth user");
-          return;
-        }
-        await addDoc(childrenRef, {
+        // Navigate back
+        navigation.goBack();
+      } else {
+        // Create new child in users/{uid}/children subcollection
+        const childrenRef = collection(db, "users", user.uid, "children");
+        const newChildDoc = await addDoc(childrenRef, {
           name,
           birthDate,
           gender: gender || null,
-          userId: user.uid,
           createdAt: serverTimestamp(),
         });
-      }
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs" }],
-      });
+        // Set as current child in user document
+        await setDoc(
+          doc(db, "users", user.uid),
+          { currentChildId: newChildDoc.id },
+          { merge: true }
+        );
+
+        // Navigation will happen automatically via App.js
+        // when it detects currentChildId changed
+      }
     } catch (e) {
-      console.log("Error saving child", e);
+      console.error("Error saving child", e);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSkip = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "MainTabs" }],
+  const handleSkip = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return;
+    }
+
+    
+    // Create a placeholder child so user can access the app
+    const childrenRef = collection(db, "users", user.uid, "children");
+    const placeholderChild = await addDoc(childrenRef, {
+      name: "My Baby",
+      birthDate: new Date().toISOString().slice(0, 10),
+      gender: "male",
+      createdAt: serverTimestamp(),
     });
-  };
+
+
+    // Set as current child
+    await setDoc(
+      doc(db, "users", user.uid),
+      { currentChildId: placeholderChild.id },
+      { merge: true }
+    );
+
+
+    // App.js will automatically navigate to MainTabs
+  } catch (e) {
+    console.error("❌ Error skipping:", e);
+  }
+};
+
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
@@ -279,24 +313,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-  },
-  stepBlock: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  stepText: {
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  progressBg: {
-    height: 4,
-    borderRadius: 9999,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    width: "40%",
-    borderRadius: 9999,
   },
   hero: {
     marginTop: 8,

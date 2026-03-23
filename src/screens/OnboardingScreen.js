@@ -1,195 +1,368 @@
 // src/screens/OnboardingScreen.js
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  FlatList,
+  Image,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../services/firebaseConfig";
+import { useTheme } from "../theme/ThemeContext";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../theme/ThemeContext";
+const { width, height } = Dimensions.get("window");
 
-export default function OnboardingScreen({ navigation }) {
-  const { t } = useTranslation();
+const SLIDES = [
+  {
+    id: "1",
+    titleKey: "onboarding_slide1_title",
+    descriptionKey: "onboarding_slide1_description",
+    emoji: "📚",
+    gradient: ["#FFE5E5", "#FFF0F0"],
+  },
+  {
+    id: "2",
+    titleKey: "onboarding_slide2_title",
+    descriptionKey: "onboarding_slide2_description",
+    emoji: "✅",
+    gradient: ["#E5F4FF", "#F0F8FF"],
+  },
+  {
+    id: "3",
+    titleKey: "onboarding_slide3_title",
+    descriptionKey: "onboarding_slide3_description",
+    emoji: "🎯",
+    gradient: ["#F0E5FF", "#F8F0FF"],
+  },
+];
+
+export default function OnboardingScreen() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [finishing, setFinishing] = useState(false);
+  const flatListRef = useRef(null);
 
-  const handleContinue = () => {
-    navigation.navigate("AddChild");
+  const handleFinishOnboarding = async () => {
+    try {
+      setFinishing(true);
+      const user = auth.currentUser;
+      if (user) {
+        await setDoc(
+          doc(db, "users", user.uid),
+          { hasSeenOnboarding: true },
+          { merge: true }
+        );
+      }
+    } catch (error) {
+      console.error("Error finishing onboarding:", error);
+      setFinishing(false);
+    }
   };
 
-  return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.BG }]} edges={["top"]}>
-      <View style={styles.header}>
-        <Text style={[styles.logoText, { color: theme.PRIMARY }]}>
-          Parents+
-        </Text>
-      </View>
+  const handleNext = () => {
+    if (currentIndex < SLIDES.length - 1) {
+      flatListRef.current?.scrollToIndex({
+        index: currentIndex + 1,
+        animated: true,
+      });
+    } else {
+      handleFinishOnboarding();
+    }
+  };
 
-      <View style={styles.illustrationWrapper}>
-        <View style={[styles.blurOuter, { backgroundColor: `${theme.PRIMARY}05` }]} />
-        <View style={[
-          styles.imageCard,
+  const handleSkip = () => {
+    handleFinishOnboarding();
+  };
+
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index || 0);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
+  const renderSlide = ({ item, index }) => (
+    <View style={[styles.slide, { width }]}>
+      {/* Hero Section with Emoji/Image */}
+      <View
+        style={[
+          styles.heroSection,
           {
-            backgroundColor: `${theme.PRIMARY}10`,
-            borderColor: `${theme.PRIMARY}10`,
-            shadowColor: theme.PRIMARY,
-          }
-        ]}>
-          <Image
-            source={require("../../assets/12.png")}
-            style={styles.babyImage}
-            resizeMode="cover"
-          />
-        </View>
+            backgroundColor:
+              index === 0
+                ? `${theme.PRIMARY}10`
+                : index === 1
+                ? `${theme.PRIMARY}08`
+                : `${theme.PRIMARY}12`,
+          },
+        ]}
+      >
+       <Image
+  source={
+    index === 0 
+      ? require("../../assets/onboarding/home-screen.webp")
+      : index === 1
+      ? require("../../assets/onboarding/tasks-screen.webp")
+      : require("../../assets/onboarding/profile-screen.webp")
+  }
+  style={styles.heroImage}
+  resizeMode="contain"
+/>
+
       </View>
 
-      <View style={styles.textBlock}>
+      {/* Content Section */}
+      <View style={styles.contentSection}>
         <Text style={[styles.title, { color: theme.TEXT }]}>
-          {t("onboarding_title_line1")}
-          {"\n"}
-          <Text style={[styles.titleAccent, { color: theme.PRIMARY }]}>
-            {t("onboarding_title_accent")}
-          </Text>
+          {t(item.titleKey)}
         </Text>
 
-        <Text style={[styles.subtitle, { color: theme.SECONDARY }]}>
-          {t("onboarding_subtitle")}
+        <Text style={[styles.description, { color: theme.SECONDARY }]}>
+          {t(item.descriptionKey)}
         </Text>
+
+        {/* Feature List */}
+        {index === 0 && (
+          <View style={styles.featureList}>
+            <FeatureItem
+              icon="📖"
+              text={t("onboarding_feature1_articles")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="🧠"
+              text={t("onboarding_feature1_categories")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="🌍"
+              text={t("onboarding_feature1_languages")}
+              theme={theme}
+            />
+          </View>
+        )}
+
+        {index === 1 && (
+          <View style={styles.featureList}>
+            <FeatureItem
+              icon="⏰"
+              text={t("onboarding_feature2_reminders")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="🏥"
+              text={t("onboarding_feature2_checkups")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="📅"
+              text={t("onboarding_feature2_milestones")}
+              theme={theme}
+            />
+          </View>
+        )}
+
+        {index === 2 && (
+          <View style={styles.featureList}>
+            <FeatureItem
+              icon="📊"
+              text={t("onboarding_feature3_tracking")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="🎨"
+              text={t("onboarding_feature3_personalized")}
+              theme={theme}
+            />
+            <FeatureItem
+              icon="🔒"
+              text={t("onboarding_feature3_private")}
+              theme={theme}
+            />
+          </View>
+        )}
       </View>
+    </View>
+  );
 
-      <View style={styles.bottomBlock}>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            {
-              backgroundColor: theme.PRIMARY,
-              shadowColor: theme.PRIMARY,
-            },
-          ]}
-          onPress={handleContinue}
-        >
-          <Text style={styles.buttonText}>
-            {t("onboarding_continue_button")}
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.BG }]}
+      edges={["top", "bottom"]}
+    >
+      {/* Header with Skip */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleSkip} disabled={finishing}>
+          <Text style={[styles.skipText, { color: theme.SECONDARY }]}>
+            {t("onboarding_skip") || "Skip"}
           </Text>
         </TouchableOpacity>
-
-        <View style={styles.dotsRow}>
-          <View style={[styles.dotActive, { backgroundColor: theme.PRIMARY }]} />
-          <View style={[styles.dot, { backgroundColor: theme.BORDER }]} />
-          <View style={[styles.dot, { backgroundColor: theme.BORDER }]} />
-        </View>
       </View>
 
-      <View style={[styles.blurSmall, { backgroundColor: `${theme.PRIMARY}06` }]} />
-      <View style={[styles.blurBig, { backgroundColor: `${theme.PRIMARY}08` }]} />
+      {/* Slides */}
+      <FlatList
+        ref={flatListRef}
+        data={SLIDES}
+        renderItem={renderSlide}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        scrollEnabled={!finishing}
+      />
+
+      {/* Footer with Pagination and Button */}
+      <View style={styles.footer}>
+        <View style={styles.pagination}>
+          {SLIDES.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  backgroundColor:
+                    index === currentIndex ? theme.PRIMARY : theme.BORDER,
+                  width: index === currentIndex ? 24 : 8,
+                },
+              ]}
+            />
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.PRIMARY }]}
+          onPress={handleNext}
+          disabled={finishing}
+        >
+          <Text style={styles.buttonText}>
+            {finishing
+              ? t("onboarding_loading") || "Loading..."
+              : currentIndex === SLIDES.length - 1
+              ? t("onboarding_get_started") || "Get Started"
+              : t("onboarding_next") || "Next"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
+// Helper component for feature items
+function FeatureItem({ icon, text, theme }) {
+  return (
+    <View style={styles.featureItem}>
+      <Text style={styles.featureIcon}>{icon}</Text>
+      <Text style={[styles.featureText, { color: theme.TEXT }]}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  skipText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  slide: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  heroSection: {
+    height: height * 0.4,
+    borderRadius: 24,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
+     overflow: "hidden",
   },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "800",
+
+   heroImage: {
+    width: width * 0.45,
+  height: height * 0.55,
+  borderRadius: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 10 },
+  shadowOpacity: 0.2,
+  shadowRadius: 15,
+  elevation: 10,
   },
-  illustrationWrapper: {
-    alignItems: "center",
-    marginTop: 16,
+  emoji: {
+    fontSize: 120,
   },
-  blurOuter: {
-    position: "absolute",
-    width: 326,
-    height: 326,
-    borderRadius: 9999,
-  },
-  imageCard: {
-    width: 326,
-    height: 326,
-    borderRadius: 48,
-    borderWidth: 1,
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 4 },
-    overflow: "hidden",
-  },
-  babyImage: {
-    width: "100%",
-    height: "100%",
-  },
-  textBlock: {
-    marginTop: 40,
-    alignItems: "center",
+  contentSection: {
+    flex: 1,
   },
   title: {
     fontSize: 32,
     fontWeight: "800",
-    textAlign: "center",
-    lineHeight: 40,
+    marginBottom: 12,
+    lineHeight: 38,
   },
-  titleAccent: {
-    // колір застосовується в JSX
+  description: {
+    fontSize: 17,
+    lineHeight: 26,
+    marginBottom: 24,
   },
-  subtitle: {
-    marginTop: 16,
-    fontSize: 16,
-    textAlign: "center",
-    lineHeight: 24,
+  featureList: {
+    gap: 16,
   },
-  bottomBlock: {
-    marginTop: 40,
-    paddingHorizontal: 8,
-  },
-  button: {
-    height: 56,
-    borderRadius: 9999,
-    justifyContent: "center",
+  featureItem: {
+    flexDirection: "row",
     alignItems: "center",
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 10 },
+    gap: 12,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.45,
+  featureIcon: {
+    fontSize: 24,
   },
-  dotsRow: {
-    marginTop: 16,
+  featureText: {
+    fontSize: 16,
+    flex: 1,
+    lineHeight: 22,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+  pagination: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 24,
     gap: 8,
   },
-  dotActive: {
-    width: 16,
-    height: 8,
-    borderRadius: 9999,
-  },
   dot: {
-    width: 8,
     height: 8,
-    borderRadius: 9999,
+    borderRadius: 4,
   },
-  blurSmall: {
-    position: "absolute",
-    top: 120,
-    right: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 9999,
+  button: {
+    height: 56,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  blurBig: {
-    position: "absolute",
-    bottom: -80,
-    left: -80,
-    width: 220,
-    height: 220,
-    borderRadius: 9999,
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
