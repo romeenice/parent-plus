@@ -107,10 +107,10 @@ function AppContent() {
   const [checkingData, setCheckingData] = useState(true); // NEW
   const [statusBarStyle, setStatusBarStyle] = useState("dark-content");
 
-  useEffect(() => {
-    const newStyle = themeKey === "pastelPink" ? "dark-content" : "light-content";
-    setStatusBarStyle(newStyle);
-  }, [themeKey]);
+useEffect(() => {
+  const newStyle = themeKey === "pastel" ? "dark-content" : "light-content";
+  setStatusBarStyle(newStyle);
+}, [themeKey]);
 
   // Initialize i18n
   useEffect(() => {
@@ -194,11 +194,11 @@ function AppContent() {
 
   return (
     <>
-      <StatusBar
-        barStyle={statusBarStyle}
-        backgroundColor="transparent"
-        translucent
-      />
+     <StatusBar
+  barStyle={statusBarStyle}
+  backgroundColor={theme.BG}
+  translucent={false}
+/>
 
       <NavigationContainer key={hasChild ? 'has-child' : 'no-child'}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
