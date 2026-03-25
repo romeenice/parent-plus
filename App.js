@@ -163,22 +163,22 @@ function AppContent() {
     const userRef = doc(db, "users", user.uid);
     
     // Listen to user document changes in REALTIME
-    const unsubUser = onSnapshot(userRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const userData = snapshot.data();
-        setHasSeenOnboarding(userData.hasSeenOnboarding || false);
-        setHasChild(!!userData.currentChildId);
-        
-       
-      } else {
-        setHasSeenOnboarding(false);
-        setHasChild(false);
-      }
-      setCheckingData(false); // Done checking
-    }, (error) => {
-      console.error("Error listening to user doc:", error);
-      setCheckingData(false);
-    });
+   const unsubUser = onSnapshot(userRef, (snapshot) => {
+  
+  if (snapshot.exists()) {
+    const userData = snapshot.data();
+    
+    setHasSeenOnboarding(userData.hasSeenOnboarding || false);
+    setHasChild(!!userData.currentChildId);
+  } else {
+    setHasSeenOnboarding(false);
+    setHasChild(false);
+  }
+  setCheckingData(false);
+}, (error) => {
+  setCheckingData(false);
+});
+
 
     return unsubUser;
   }, [user]);
@@ -200,7 +200,7 @@ function AppContent() {
         translucent
       />
 
-      <NavigationContainer>
+      <NavigationContainer key={hasChild ? 'has-child' : 'no-child'}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!user ? (
             <Stack.Screen name="Auth" component={AuthScreen} />

@@ -88,7 +88,7 @@ export default function AddChildScreen({ navigation, route }) {
           { currentChildId: newChildDoc.id },
           { merge: true }
         );
-
+        navigation.goBack();
         // Navigation will happen automatically via App.js
         // when it detects currentChildId changed
       }

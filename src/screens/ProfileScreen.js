@@ -15,6 +15,9 @@ import { THEMES } from "../theme/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useFocusEffect } from "@react-navigation/native";
+import { useState, useCallback } from "react";
+
 
 import { useCurrentChild } from "../hooks/useCurrentChild";
 import { signOut } from "firebase/auth";
@@ -39,8 +42,15 @@ export default function ProfileScreen({ navigation }) {
     currentChildId,
     setCurrentChildId,
     deleteChild,
+    refreshChildren,
     loading,
   } = useCurrentChild(userId);
+
+  useFocusEffect(
+  useCallback(() => {
+    refreshChildren();
+  }, [refreshChildren])
+);
 
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [selectedLanguage, setSelectedLanguage] = React.useState("en");

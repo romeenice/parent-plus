@@ -3,8 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import {
   getFirestore,
   collection,
-  query,
-  where,
   getDocs,
   doc,
   getDoc,
@@ -20,15 +18,117 @@ export function useCurrentChild(userId) {
   const [child, setChild] = useState(null);
   const [ageMonths, setAgeMonths] = useState(null);
   const [loading, setLoading] = useState(true);
-  
 
   const db = getFirestore();
+
+  // функція завантаження дітей (винесена окремо)
+  const loadChildren = useCallback(async () => {
+    if (!userId) {
+      setChildren([]);
+      setCurrentChildIdState(null);
+      setChild(null);
+      setAgeMonths(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 1) всі діти користувача
+      const childrenRef = collection(db, "users", userId, "children");
+      const snap = await getDocs(childrenRef);
+
+      const list = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setChildren(list);
+
+      // 2) читаємо currentChildId з users/{userId}
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+      const savedId = userSnap.exists()
+        ? userSnap.data().currentChildId
+        : null;
+
+      let effectiveId =
+        savedId && list.find((c) => c.id === savedId)
+          ? savedId
+          : list[0]?.id || null;
+
+      setCurrentChildIdState(effectiveId);
+
+      if (effectiveId) {
+        const c = list.find((x) => x.id === effectiveId) || null;
+        if (c) {
+          const months = c.birthDate ? getAgeInMonths(c.birthDate) : null;
+          setChild(c);
+          setAgeMonths(months);
+        } else {
+          setChild(null);
+          setAgeMonths(null);
+        }
+      } else {
+        setChild(null);
+        setAgeMonths(null);
+      }
+    } catch (e) {
+      console.log("Error loading children", e);
+      setChildren([]);
+      setCurrentChildIdState(null);
+      setChild(null);
+      setAgeMonths(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, db]);
+
+  // початкове завантаження
+  useEffect(() => {
+    loadChildren();
+  }, [loadChildren]);
+
+  // функція для оновлення списку дітей (БЕЗ loading screen)
+  const refreshChildren = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const childrenRef = collection(db, "users", userId, "children");
+      const snap = await getDocs(childrenRef);
+
+      const list = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setChildren(list);
+
+      // Оновити поточну дитину
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+      const savedId = userSnap.exists()
+        ? userSnap.data().currentChildId
+        : null;
+
+      if (savedId) {
+        const c = list.find((x) => x.id === savedId);
+        if (c) {
+          const months = c.birthDate ? getAgeInMonths(c.birthDate) : null;
+          setChild(c);
+          setAgeMonths(months);
+          setCurrentChildIdState(savedId);
+        }
+      }
+    } catch (e) {
+      console.log("Error refreshing children", e);
+    }
+  }, [userId, db]);
 
   // видалення дитини
   const deleteChild = useCallback(
     async (id) => {
       try {
-        const ref = doc(db, "children", id);
+        const ref = doc(db, "users", userId, "children", id);
         await deleteDoc(ref);
 
         const updated = children.filter((c) => c.id !== id);
@@ -53,75 +153,7 @@ export function useCurrentChild(userId) {
     [children, currentChildId, db, userId]
   );
 
-  // завантаження дітей + currentChildId з users/{userId}
-  useEffect(() => {
-    if (!userId) {
-      setChildren([]);
-      setCurrentChildIdState(null);
-      setChild(null);
-      setAgeMonths(null);
-      setLoading(false);
-      return;
-    }
-
-    const loadChildren = async () => {
-      try {
-        setLoading(true);
-
-        // 1) всі діти користувача
-        const childrenRef = collection(db, "children");
-        const q = query(childrenRef, where("userId", "==", userId));
-        const snap = await getDocs(q);
-
-        const list = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
-        setChildren(list);
-
-        // 2) читаємо currentChildId з users/{userId}
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        const savedId = userSnap.exists()
-          ? userSnap.data().currentChildId
-          : null;
-
-        let effectiveId =
-          savedId && list.find((c) => c.id === savedId)
-            ? savedId
-            : list[0]?.id || null;
-
-        setCurrentChildIdState(effectiveId);
-
-        if (effectiveId) {
-          const c = list.find((x) => x.id === effectiveId) || null;
-          if (c) {
-            const months = c.birthDate ? getAgeInMonths(c.birthDate) : null;
-            setChild(c);
-            setAgeMonths(months);
-          } else {
-            setChild(null);
-            setAgeMonths(null);
-          }
-        } else {
-          setChild(null);
-          setAgeMonths(null);
-        }
-      } catch (e) {
-        console.log("Error loading children", e);
-        setChildren([]);
-        setCurrentChildIdState(null);
-        setChild(null);
-        setAgeMonths(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadChildren();
-  }, [userId, db]);
-
-  // зміна поточної дитини + запис у users/{userId}
+  // зміна поточної дитини
   const setCurrentChildId = useCallback(
     async (id) => {
       setCurrentChildIdState(id);
@@ -161,6 +193,7 @@ export function useCurrentChild(userId) {
     currentChildId,
     setCurrentChildId,
     deleteChild,
+    refreshChildren, // ← НОВИЙ
     loading,
   };
 }

@@ -368,6 +368,7 @@ const unreadItems = currentWeekItems.filter((item) => !item.isRead);
 const readItems = filteredFeed.filter((item) => item.isRead);
 
 
+
   const handleOpenArticle = (item) => {
     navigation.navigate("ArticleDetails", {
       articleId: item.articleId,
