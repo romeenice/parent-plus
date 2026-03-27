@@ -19,27 +19,32 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
 
 import { auth, db } from "../services/firebaseConfig";
 import { useTheme } from "../theme/ThemeContext";
 import { useTranslation } from "react-i18next";
 
+// Умовний імпорт Google Sign-In
 const isExpoGo = Constants.appOwnership === 'expo';
+let GoogleSignin = null;
+
+if (!isExpoGo) {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+}
 
 export default function AuthScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState(""); // НОВЕ: для імені
+  const [displayName, setDisplayName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Configure Google Sign-In
   useEffect(() => {
-    if (!isExpoGo) {
+    if (!isExpoGo && GoogleSignin) {
       GoogleSignin.configure({
         webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         offlineAccess: true,
@@ -50,9 +55,14 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     if (isExpoGo) {
       Alert.alert(
-        'Недоступно в Expo Go',
-        'Google Sign-In працює тільки в зібраному APK. Використовуйте email/password для тестування.'
+        t("unavailableInExpoGo"),
+        t("googleSignInExpoGoMessage")
       );
+      return;
+    }
+
+    if (!GoogleSignin) {
+      Alert.alert(t("error"), 'Google Sign-In не доступний');
       return;
     }
 
@@ -84,7 +94,7 @@ export default function AuthScreen() {
       }
     } catch (error) {
       console.error("Google Sign-In error:", error);
-      Alert.alert("Error", "Failed to sign in with Google");
+      Alert.alert(t("error"), t("auth_google_signin_failed"));
     } finally {
       setLoading(false);
     }
@@ -92,13 +102,12 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Помилка", "Будь ласка, заповніть всі поля");
+      Alert.alert(t("error"), t("errorFillFields"));
       return;
     }
 
-    // НОВЕ: перевірка імені при реєстрації
     if (isSignUp && !displayName.trim()) {
-      Alert.alert("Помилка", "Будь ласка, введіть ваше ім'я");
+      Alert.alert(t("error"), t("errorEnterName"));
       return;
     }
 
@@ -115,7 +124,7 @@ export default function AuthScreen() {
 
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
-          displayName: displayName.trim(), // НОВЕ: зберігаємо ім'я
+          displayName: displayName.trim(),
           createdAt: new Date().toISOString(),
           language: "uk",
           themeKey: "pastelPink",
@@ -126,7 +135,7 @@ export default function AuthScreen() {
       }
     } catch (error) {
       console.error("Auth error:", error);
-      Alert.alert("Помилка", error.message);
+      Alert.alert(t("error"), error.message);
     } finally {
       setLoading(false);
     }
@@ -150,7 +159,7 @@ export default function AuthScreen() {
               👶 Parents+
             </Text>
             <Text style={[styles.subtitle, { color: theme.SECONDARY }]}>
-              {isSignUp ? "Створити акаунт" : "Вітаємо знову"}
+              {isSignUp ? t("createAccount") : t("welcomeBack")}
             </Text>
           </View>
 
@@ -169,19 +178,20 @@ export default function AuthScreen() {
             >
               <Text style={styles.googleIcon}>🔵</Text>
               <Text style={[styles.googleButtonText, { color: theme.TEXT }]}>
-                Continue with Google
+                {t("auth_google_signin")}
               </Text>
             </TouchableOpacity>
           )}
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
-            <Text style={[styles.dividerText, { color: theme.SECONDARY }]}>АБО</Text>
+            <Text style={[styles.dividerText, { color: theme.SECONDARY }]}>
+              {t("auth_or")}
+            </Text>
             <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
           </View>
 
           <View style={styles.form}>
-            {/* НОВЕ: поле імені тільки при реєстрації */}
             {isSignUp && (
               <TextInput
                 style={[
@@ -192,7 +202,7 @@ export default function AuthScreen() {
                     borderColor: theme.BORDER,
                   },
                 ]}
-                placeholder="Ім'я"
+                placeholder={t("auth_name_placeholder")}
                 placeholderTextColor={theme.SECONDARY}
                 value={displayName}
                 onChangeText={setDisplayName}
@@ -210,7 +220,7 @@ export default function AuthScreen() {
                   borderColor: theme.BORDER,
                 },
               ]}
-              placeholder="Email"
+              placeholder={t("auth_email_placeholder")}
               placeholderTextColor={theme.SECONDARY}
               value={email}
               onChangeText={setEmail}
@@ -228,7 +238,7 @@ export default function AuthScreen() {
                   borderColor: theme.BORDER,
                 },
               ]}
-              placeholder="Пароль"
+              placeholder={t("auth_password_placeholder")}
               placeholderTextColor={theme.SECONDARY}
               value={password}
               onChangeText={setPassword}
@@ -246,7 +256,7 @@ export default function AuthScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? "Завантаження..." : isSignUp ? "Зареєструватися" : "Увійти"}
+                {loading ? t("loading") : isSignUp ? t("signUp") : t("signIn")}
               </Text>
             </TouchableOpacity>
 
@@ -256,8 +266,8 @@ export default function AuthScreen() {
             >
               <Text style={[styles.toggleText, { color: theme.SECONDARY }]}>
                 {isSignUp
-                  ? "Вже є акаунт? Увійти"
-                  : "Немає акаунту? Зареєструватися"}
+                  ? t("alreadyHaveAccount")
+                  : t("dontHaveAccount")}
               </Text>
             </TouchableOpacity>
           </View>

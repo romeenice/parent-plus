@@ -249,9 +249,21 @@ tasks_previous_tasks_title: "Previous tasks",
   "onboarding_feature3_personalized": "Personalized content and themes",
   "onboarding_feature3_private": "Private and secure data",
   "auth_name_label": "Name",
-"auth_name_placeholder": "Enter your name"
-
-
+"auth_name_placeholder": "Enter your name",
+"auth_name_placeholder": "Enter your name",
+"createAccount": "Create your account",
+"welcomeBack": "Welcome back",
+"auth_google_signin": "Continue with Google",
+"auth_or": "OR",
+"signUp": "Sign Up",
+"signIn": "Sign In",
+"alreadyHaveAccount": "Already have an account? Sign In",
+"dontHaveAccount": "Don't have an account? Sign Up",
+"loading": "Loading...",
+"errorFillFields": "Please fill in all fields",
+"errorEnterName": "Please enter your name",
+"unavailableInExpoGo": "Unavailable in Expo Go",
+"googleSignInExpoGoMessage": "Google Sign-In only works in built APK. Use email/password for testing in Expo Go.",
 
     },
     
@@ -501,7 +513,21 @@ tasks_done_block_title: "Виконані завдання",
   "onboarding_feature3_personalized": "Персоналізований контент та теми",
   "onboarding_feature3_private": "Приватні та безпечні дані",
   "auth_name_label": "Ім'я",
-"auth_name_placeholder": "Введіть ваше ім'я"
+"auth_name_placeholder": "Введіть ваше ім'я",
+"auth_name_placeholder": "Введіть ваше ім'я",
+"createAccount": "Створити акаунт",
+"welcomeBack": "Вітаємо знову",
+"auth_google_signin": "Увійти через Google",
+"auth_or": "АБО",
+"signUp": "Зареєструватися",
+"signIn": "Увійти",
+"alreadyHaveAccount": "Вже є акаунт? Увійти",
+"dontHaveAccount": "Немає акаунту? Зареєструватися",
+"loading": "Завантаження...",
+"errorFillFields": "Будь ласка, заповніть всі поля",
+"errorEnterName": "Будь ласка, введіть ваше ім'я",
+"unavailableInExpoGo": "Недоступно в Expo Go",
+"googleSignInExpoGoMessage": "Google Sign-In працює тільки в зібраному APK. Використовуйте email/password для тестування.",
 
 
 
@@ -758,7 +784,21 @@ tasks_done_block_title: "Tareas completadas",
   "onboarding_feature3_personalized": "Contenido y temas personalizados",
   "onboarding_feature3_private": "Datos privados y seguros",
   "auth_name_label": "Nombre",
-"auth_name_placeholder": "Introduce tu nombre"
+"auth_name_placeholder": "Introduce tu nombre",
+"auth_name_placeholder": "Introduce tu nombre",
+"createAccount": "Crear cuenta",
+"welcomeBack": "Bienvenido de nuevo",
+"auth_google_signin": "Continuar con Google",
+"auth_or": "O",
+"signUp": "Registrarse",
+"signIn": "Iniciar sesión",
+"alreadyHaveAccount": "¿Ya tienes cuenta? Iniciar sesión",
+"dontHaveAccount": "¿No tienes cuenta? Registrarse",
+"loading": "Cargando...",
+"errorFillFields": "Por favor, completa todos los campos",
+"errorEnterName": "Por favor, introduce tu nombre",
+"unavailableInExpoGo": "No disponible en Expo Go",
+"googleSignInExpoGoMessage": "Google Sign-In solo funciona en APK compilado. Usa email/password para probar en Expo Go."
 
 
 

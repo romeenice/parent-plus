@@ -51,53 +51,58 @@ export default function AddChildScreen({ navigation, route }) {
   };
 
   const handleSave = async () => {
-    if (!name || !birthDate) return;
+  if (!name || !birthDate) return;
 
-    try {
-      setSaving(true);
-      const user = auth.currentUser;
-      if (!user) {
-        console.log("No auth user");
-        return;
-      }
-
-      if (isEdit && editingChildId) {
-        // Edit existing child
-        const childRef = doc(db, "users", user.uid, "children", editingChildId);
-        await updateDoc(childRef, {
-          name,
-          birthDate,
-          gender: gender || null,
-        });
-
-        // Navigate back
-        navigation.goBack();
-      } else {
-        // Create new child in users/{uid}/children subcollection
-        const childrenRef = collection(db, "users", user.uid, "children");
-        const newChildDoc = await addDoc(childrenRef, {
-          name,
-          birthDate,
-          gender: gender || null,
-          createdAt: serverTimestamp(),
-        });
-
-        // Set as current child in user document
-        await setDoc(
-          doc(db, "users", user.uid),
-          { currentChildId: newChildDoc.id },
-          { merge: true }
-        );
-        navigation.goBack();
-        // Navigation will happen automatically via App.js
-        // when it detects currentChildId changed
-      }
-    } catch (e) {
-      console.error("Error saving child", e);
-    } finally {
-      setSaving(false);
+  try {
+    setSaving(true);
+    const user = auth.currentUser;
+    if (!user) {
+      console.log("No auth user");
+      return;
     }
-  };
+
+    if (isEdit && editingChildId) {
+      // Edit existing child
+      const childRef = doc(db, "users", user.uid, "children", editingChildId);
+      await updateDoc(childRef, {
+        name,
+        birthDate,
+        gender: gender || null,
+      });
+
+      // Navigate back only if we can
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    } else {
+      // Create new child in users/{uid}/children subcollection
+      const childrenRef = collection(db, "users", user.uid, "children");
+      const newChildDoc = await addDoc(childrenRef, {
+        name,
+        birthDate,
+        gender: gender || null,
+        createdAt: serverTimestamp(),
+      });
+
+      // Set as current child in user document
+      await setDoc(
+        doc(db, "users", user.uid),
+        { currentChildId: newChildDoc.id },
+        { merge: true }
+      );
+
+      // Navigate back only if we can (e.g., adding from Profile)
+      // Otherwise App.js will handle navigation automatically during onboarding
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    }
+  } catch (e) {
+    console.error("Error saving child", e);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleSkip = async () => {
   try {
