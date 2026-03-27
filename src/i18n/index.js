@@ -247,7 +247,9 @@ tasks_previous_tasks_title: "Previous tasks",
   
   "onboarding_feature3_tracking": "Milestone tracking",
   "onboarding_feature3_personalized": "Personalized content and themes",
-  "onboarding_feature3_private": "Private and secure data"
+  "onboarding_feature3_private": "Private and secure data",
+  "auth_name_label": "Name",
+"auth_name_placeholder": "Enter your name"
 
 
 
@@ -497,7 +499,9 @@ tasks_done_block_title: "Виконані завдання",
   
   "onboarding_feature3_tracking": "Відстеження віх розвитку",
   "onboarding_feature3_personalized": "Персоналізований контент та теми",
-  "onboarding_feature3_private": "Приватні та безпечні дані"
+  "onboarding_feature3_private": "Приватні та безпечні дані",
+  "auth_name_label": "Ім'я",
+"auth_name_placeholder": "Введіть ваше ім'я"
 
 
 
@@ -752,7 +756,9 @@ tasks_done_block_title: "Tareas completadas",
   
   "onboarding_feature3_tracking": "Seguimiento de hitos",
   "onboarding_feature3_personalized": "Contenido y temas personalizados",
-  "onboarding_feature3_private": "Datos privados y seguros"
+  "onboarding_feature3_private": "Datos privados y seguros",
+  "auth_name_label": "Nombre",
+"auth_name_placeholder": "Introduce tu nombre"
 
 
 

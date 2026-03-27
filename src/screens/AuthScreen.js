@@ -19,49 +19,50 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
 
 import { auth, db } from "../services/firebaseConfig";
 import { useTheme } from "../theme/ThemeContext";
 import { useTranslation } from "react-i18next";
 
-WebBrowser.maybeCompleteAuthSession();
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export default function AuthScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState(""); // НОВЕ: для імені
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Google Sign-In configuration
- const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-  clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-});
-
-// console.log("🔑 Web ID:", process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
-// console.log("🤖 Android ID:", process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID);
-
-  // Handle Google Sign-In response
+  // Configure Google Sign-In
   useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params;
-      handleGoogleSignIn(id_token);
-    } else if (response?.type === "error") {
-      console.error("Google auth error:", response.error);
-      Alert.alert(
-        t("auth_error_title") || "Error",
-        "Google sign-in failed. Please try again."
-      );
+    if (!isExpoGo) {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
     }
-  }, [response]);
+  }, []);
 
-  const handleGoogleSignIn = async (idToken) => {
+  const handleGoogleSignIn = async () => {
+    if (isExpoGo) {
+      Alert.alert(
+        'Недоступно в Expo Go',
+        'Google Sign-In працює тільки в зібраному APK. Використовуйте email/password для тестування.'
+      );
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      
+      const { idToken } = await GoogleSignin.getTokens();
       
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
@@ -75,9 +76,10 @@ export default function AuthScreen() {
           email: user.email,
           displayName: user.displayName || "",
           photoURL: user.photoURL || "",
-          createdAt: new Date(),
-          language: "en",
+          createdAt: new Date().toISOString(),
+          language: "uk",
           themeKey: "pastelPink",
+          hasSeenOnboarding: false,
         });
       }
     } catch (error) {
@@ -90,7 +92,13 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert("Помилка", "Будь ласка, заповніть всі поля");
+      return;
+    }
+
+    // НОВЕ: перевірка імені при реєстрації
+    if (isSignUp && !displayName.trim()) {
+      Alert.alert("Помилка", "Будь ласка, введіть ваше ім'я");
       return;
     }
 
@@ -107,16 +115,18 @@ export default function AuthScreen() {
 
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
-          createdAt: new Date(),
-          language: "en",
+          displayName: displayName.trim(), // НОВЕ: зберігаємо ім'я
+          createdAt: new Date().toISOString(),
+          language: "uk",
           themeKey: "pastelPink",
+          hasSeenOnboarding: false,
         });
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (error) {
       console.error("Auth error:", error);
-      Alert.alert("Error", error.message);
+      Alert.alert("Помилка", error.message);
     } finally {
       setLoading(false);
     }
@@ -140,36 +150,57 @@ export default function AuthScreen() {
               👶 Parents+
             </Text>
             <Text style={[styles.subtitle, { color: theme.SECONDARY }]}>
-              {isSignUp ? "Create your account" : "Welcome back"}
+              {isSignUp ? "Створити акаунт" : "Вітаємо знову"}
             </Text>
           </View>
 
-          {/* ТІЛЬКИ ОДНА Google кнопка */}
-          <TouchableOpacity
-            style={[
-              styles.googleButton,
-              {
-                backgroundColor: theme.CARD_BG,
-                borderColor: theme.BORDER,
-              },
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={() => promptAsync()}
-            disabled={!request || loading}
-          >
-            <Text style={styles.googleIcon}>🔵</Text>
-            <Text style={[styles.googleButtonText, { color: theme.TEXT }]}>
-              Continue with Google
-            </Text>
-          </TouchableOpacity>
+          {!isExpoGo && (
+            <TouchableOpacity
+              style={[
+                styles.googleButton,
+                {
+                  backgroundColor: theme.CARD_BG,
+                  borderColor: theme.BORDER,
+                },
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+            >
+              <Text style={styles.googleIcon}>🔵</Text>
+              <Text style={[styles.googleButtonText, { color: theme.TEXT }]}>
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
-            <Text style={[styles.dividerText, { color: theme.SECONDARY }]}>OR</Text>
+            <Text style={[styles.dividerText, { color: theme.SECONDARY }]}>АБО</Text>
             <View style={[styles.dividerLine, { backgroundColor: theme.BORDER }]} />
           </View>
 
           <View style={styles.form}>
+            {/* НОВЕ: поле імені тільки при реєстрації */}
+            {isSignUp && (
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.CARD_BG,
+                    color: theme.TEXT,
+                    borderColor: theme.BORDER,
+                  },
+                ]}
+                placeholder="Ім'я"
+                placeholderTextColor={theme.SECONDARY}
+                value={displayName}
+                onChangeText={setDisplayName}
+                autoCapitalize="words"
+                editable={!loading}
+              />
+            )}
+
             <TextInput
               style={[
                 styles.input,
@@ -197,7 +228,7 @@ export default function AuthScreen() {
                   borderColor: theme.BORDER,
                 },
               ]}
-              placeholder="Password"
+              placeholder="Пароль"
               placeholderTextColor={theme.SECONDARY}
               value={password}
               onChangeText={setPassword}
@@ -215,7 +246,7 @@ export default function AuthScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+                {loading ? "Завантаження..." : isSignUp ? "Зареєструватися" : "Увійти"}
               </Text>
             </TouchableOpacity>
 
@@ -225,8 +256,8 @@ export default function AuthScreen() {
             >
               <Text style={[styles.toggleText, { color: theme.SECONDARY }]}>
                 {isSignUp
-                  ? "Already have an account? Sign In"
-                  : "Don't have an account? Sign Up"}
+                  ? "Вже є акаунт? Увійти"
+                  : "Немає акаунту? Зареєструватися"}
               </Text>
             </TouchableOpacity>
           </View>
