@@ -265,6 +265,30 @@ tasks_previous_tasks_title: "Previous tasks",
 "unavailableInExpoGo": "Unavailable in Expo Go",
 "googleSignInExpoGoMessage": "Google Sign-In only works in built APK. Use email/password for testing in Expo Go.",
 
+// Onboarding Slide 1
+"onboarding_slide1_title": "Weekly Articles for Parents",
+"onboarding_slide1_description": "Every Sunday you receive 4 new expert articles about development, health, psychology, and play — tailored to your child's current age.",
+"onboarding_feature1_articles": "New articles every Sunday",
+"onboarding_feature1_categories": "4 categories: development, health, psychology, play",
+"onboarding_feature1_languages": "Content in 3 languages: Ukrainian, English, Spanish",
+
+// Onboarding Slide 2
+"onboarding_slide2_title": "Tasks for Child Development",
+"onboarding_slide2_description": "Complete weekly practical tasks and better understand what your child needs at each stage of their development.",
+"onboarding_feature2_reminders": "Practical tips and tasks every week",
+"onboarding_feature2_checkups": "Reminders for important doctor visits",
+"onboarding_feature2_milestones": "Track your baby's developmental milestones",
+
+// Onboarding Slide 3
+"onboarding_slide3_title": "Everything for Your Convenience",
+"onboarding_slide3_description": "The app is designed with parents in mind. Customize everything to your liking and get the best user experience.",
+"onboarding_feature3_languages": "3 interface languages to choose from",
+"onboarding_feature3_themes": "8 theme designs for different moods",
+"onboarding_feature3_multiple_children": "Add multiple children to one profile",
+"onboarding_feature3_notifications": "Smart notifications and reminders",
+"onboarding_feature3_support": "Quick 24/7 support connection",
+
+
     },
     
     
@@ -529,6 +553,28 @@ tasks_done_block_title: "Виконані завдання",
 "unavailableInExpoGo": "Недоступно в Expo Go",
 "googleSignInExpoGoMessage": "Google Sign-In працює тільки в зібраному APK. Використовуйте email/password для тестування.",
 
+// Onboarding Slide 1
+"onboarding_slide1_title": "Щотижневі статті для батьків",
+"onboarding_slide1_description": "Кожної неділі ви отримуєте 4 нові експертні статті про розвиток, здоров'я, психологію та ігри — адаптовані під поточний вік вашої дитини.",
+"onboarding_feature1_articles": "Нові статті кожної неділі",
+"onboarding_feature1_categories": "4 категорії: розвиток, здоров'я, психологія, ігри",
+"onboarding_feature1_languages": "Контент на 3 мовах: українська, англійська, іспанська",
+
+// Onboarding Slide 2
+"onboarding_slide2_title": "Завдання для розвитку дитини",
+"onboarding_slide2_description": "Виконуйте щотижневі практичні завдання та краще розумійте що потрібно вашій дитині на кожному етапі її розвитку.",
+"onboarding_feature2_reminders": "Практичні поради та завдання щотижня",
+"onboarding_feature2_checkups": "Нагадування про важливі візити до лікаря",
+"onboarding_feature2_milestones": "Відстеження етапів розвитку малюка",
+
+// Onboarding Slide 3
+"onboarding_slide3_title": "Все для вашої зручності",
+"onboarding_slide3_description": "Застосунок створений з думкою про батьків. Налаштуйте все під себе та отримайте найкращий досвід користування.",
+"onboarding_feature3_languages": "3 мови інтерфейсу на вибір",
+"onboarding_feature3_themes": "8 тем оформлення під різний настрій",
+"onboarding_feature3_multiple_children": "Додавайте кілька дітей в один профіль",
+"onboarding_feature3_notifications": "Розумні сповіщення та нагадування",
+"onboarding_feature3_support": "Швидкий зв'язок з підтримкою 24/7",
 
 
 
@@ -798,15 +844,35 @@ tasks_done_block_title: "Tareas completadas",
 "errorFillFields": "Por favor, completa todos los campos",
 "errorEnterName": "Por favor, introduce tu nombre",
 "unavailableInExpoGo": "No disponible en Expo Go",
-"googleSignInExpoGoMessage": "Google Sign-In solo funciona en APK compilado. Usa email/password para probar en Expo Go."
+"googleSignInExpoGoMessage": "Google Sign-In solo funciona en APK compilado. Usa email/password para probar en Expo Go.",
 
+// Onboarding Slide 1
+"onboarding_slide1_title": "Artículos Semanales para Padres",
+"onboarding_slide1_description": "Cada domingo recibes 4 artículos nuevos de expertos sobre desarrollo, salud, psicología y juegos — adaptados a la edad actual de tu hijo.",
+"onboarding_feature1_articles": "Artículos nuevos cada domingo",
+"onboarding_feature1_categories": "4 categorías: desarrollo, salud, psicología, juegos",
+"onboarding_feature1_languages": "Contenido en 3 idiomas: ucraniano, inglés, español",
 
+// Onboarding Slide 2
+"onboarding_slide2_title": "Tareas para el Desarrollo Infantil",
+"onboarding_slide2_description": "Completa tareas prácticas semanales y entiende mejor lo que tu hijo necesita en cada etapa de su desarrollo.",
+"onboarding_feature2_reminders": "Consejos prácticos y tareas cada semana",
+"onboarding_feature2_checkups": "Recordatorios de visitas importantes al médico",
+"onboarding_feature2_milestones": "Seguimiento de hitos del desarrollo del bebé",
+
+// Onboarding Slide 3
+"onboarding_slide3_title": "Todo para tu Comodidad",
+"onboarding_slide3_description": "La aplicación está diseñada pensando en los padres. Personaliza todo a tu gusto y obtén la mejor experiencia de usuario.",
+"onboarding_feature3_languages": "3 idiomas de interfaz para elegir",
+"onboarding_feature3_themes": "8 diseños de temas para diferentes estados de ánimo",
+"onboarding_feature3_multiple_children": "Agrega varios niños a un perfil",
+"onboarding_feature3_notifications": "Notificaciones y recordatorios inteligentes",
+"onboarding_feature3_support": "Conexión rápida con soporte 24/7",
 
     },
   },
 };
 
-// функція, яку будемо викликати в App.js
 export async function initI18n(initialLanguage) {
   const fallback = "en";
   const deviceLang = Localization.getLocales()[0]?.languageCode || fallback;
@@ -815,7 +881,7 @@ export async function initI18n(initialLanguage) {
     .use(initReactI18next)
     .init({
       resources,
-      lng: initialLanguage || deviceLang, // мова, з якої стартуємо
+      lng: initialLanguage || deviceLang,
       fallbackLng: fallback,
       interpolation: { escapeValue: false },
     });

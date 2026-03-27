@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Dimensions,
   FlatList,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, setDoc } from "firebase/firestore";
@@ -15,29 +14,40 @@ import { auth, db } from "../services/firebaseConfig";
 import { useTheme } from "../theme/ThemeContext";
 import { useTranslation } from "react-i18next";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const SLIDES = [
   {
     id: "1",
     titleKey: "onboarding_slide1_title",
     descriptionKey: "onboarding_slide1_description",
-    emoji: "📚",
-    gradient: ["#FFE5E5", "#FFF0F0"],
+    features: [
+      { iconKey: "onboarding_feature1_articles" },
+      { iconKey: "onboarding_feature1_categories" },
+      { iconKey: "onboarding_feature1_languages" },
+    ],
   },
   {
     id: "2",
     titleKey: "onboarding_slide2_title",
     descriptionKey: "onboarding_slide2_description",
-    emoji: "✅",
-    gradient: ["#E5F4FF", "#F0F8FF"],
+    features: [
+      { iconKey: "onboarding_feature2_reminders" },
+      { iconKey: "onboarding_feature2_checkups" },
+      { iconKey: "onboarding_feature2_milestones" },
+    ],
   },
   {
     id: "3",
     titleKey: "onboarding_slide3_title",
     descriptionKey: "onboarding_slide3_description",
-    emoji: "🎯",
-    gradient: ["#F0E5FF", "#F8F0FF"],
+    features: [
+      { iconKey: "onboarding_feature3_languages" },
+      { iconKey: "onboarding_feature3_themes" },
+      { iconKey: "onboarding_feature3_multiple_children" },
+      { iconKey: "onboarding_feature3_notifications" },
+      { iconKey: "onboarding_feature3_support" },
+    ],
   },
 ];
 
@@ -92,104 +102,38 @@ export default function OnboardingScreen() {
 
   const renderSlide = ({ item, index }) => (
     <View style={[styles.slide, { width }]}>
-      {/* Hero Section with Emoji/Image */}
-      <View
-        style={[
-          styles.heroSection,
-          {
-            backgroundColor:
-              index === 0
-                ? `${theme.PRIMARY}10`
-                : index === 1
-                ? `${theme.PRIMARY}08`
-                : `${theme.PRIMARY}12`,
-          },
-        ]}
-      >
-       <Image
-  source={
-    index === 0 
-      ? require("../../assets/onboarding/home-screen.webp")
-      : index === 1
-      ? require("../../assets/onboarding/tasks-screen.webp")
-      : require("../../assets/onboarding/profile-screen.webp")
-  }
-  style={styles.heroImage}
-  resizeMode="contain"
-/>
-
-      </View>
-
-      {/* Content Section */}
       <View style={styles.contentSection}>
+        {/* Number Badge */}
+        <View style={[styles.badge, { backgroundColor: `${theme.PRIMARY}20` }]}>
+          <Text style={[styles.badgeText, { color: theme.PRIMARY }]}>
+            {index + 1} / 3
+          </Text>
+        </View>
+
+        {/* Title */}
         <Text style={[styles.title, { color: theme.TEXT }]}>
           {t(item.titleKey)}
         </Text>
 
+        {/* Description */}
         <Text style={[styles.description, { color: theme.SECONDARY }]}>
           {t(item.descriptionKey)}
         </Text>
 
         {/* Feature List */}
-        {index === 0 && (
-          <View style={styles.featureList}>
-            <FeatureItem
-              icon="📖"
-              text={t("onboarding_feature1_articles")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="🧠"
-              text={t("onboarding_feature1_categories")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="🌍"
-              text={t("onboarding_feature1_languages")}
-              theme={theme}
-            />
-          </View>
-        )}
-
-        {index === 1 && (
-          <View style={styles.featureList}>
-            <FeatureItem
-              icon="⏰"
-              text={t("onboarding_feature2_reminders")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="🏥"
-              text={t("onboarding_feature2_checkups")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="📅"
-              text={t("onboarding_feature2_milestones")}
-              theme={theme}
-            />
-          </View>
-        )}
-
-        {index === 2 && (
-          <View style={styles.featureList}>
-            <FeatureItem
-              icon="📊"
-              text={t("onboarding_feature3_tracking")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="🎨"
-              text={t("onboarding_feature3_personalized")}
-              theme={theme}
-            />
-            <FeatureItem
-              icon="🔒"
-              text={t("onboarding_feature3_private")}
-              theme={theme}
-            />
-          </View>
-        )}
+        <View style={styles.featureList}>
+          {item.features.map((feature, idx) => (
+            <View
+              key={idx}
+              style={[styles.featureItem, { backgroundColor: theme.CARD_BG }]}
+            >
+              <View style={[styles.featureDot, { backgroundColor: theme.PRIMARY }]} />
+              <Text style={[styles.featureText, { color: theme.TEXT }]}>
+                {t(feature.iconKey)}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -203,7 +147,7 @@ export default function OnboardingScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={handleSkip} disabled={finishing}>
           <Text style={[styles.skipText, { color: theme.SECONDARY }]}>
-            {t("onboarding_skip") || "Skip"}
+            {t("onboarding_skip")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -233,7 +177,7 @@ export default function OnboardingScreen() {
                 {
                   backgroundColor:
                     index === currentIndex ? theme.PRIMARY : theme.BORDER,
-                  width: index === currentIndex ? 24 : 8,
+                  width: index === currentIndex ? 32 : 8,
                 },
               ]}
             />
@@ -247,24 +191,14 @@ export default function OnboardingScreen() {
         >
           <Text style={styles.buttonText}>
             {finishing
-              ? t("onboarding_loading") || "Loading..."
+              ? t("common_loading")
               : currentIndex === SLIDES.length - 1
-              ? t("onboarding_get_started") || "Get Started"
-              : t("onboarding_next") || "Next"}
+              ? t("onboarding_get_started")
+              : t("onboarding_next")}
           </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  );
-}
-
-// Helper component for feature items
-function FeatureItem({ icon, text, theme }) {
-  return (
-    <View style={styles.featureItem}>
-      <Text style={styles.featureIcon}>{icon}</Text>
-      <Text style={[styles.featureText, { color: theme.TEXT }]}>{text}</Text>
-    </View>
   );
 }
 
@@ -277,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 16,
   },
   skipText: {
     fontSize: 16,
@@ -286,62 +220,58 @@ const styles = StyleSheet.create({
   slide: {
     flex: 1,
     paddingHorizontal: 24,
-  },
-  heroSection: {
-    height: height * 0.4,
-    borderRadius: 24,
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 32,
-     overflow: "hidden",
-  },
-
-   heroImage: {
-    width: width * 0.45,
-  height: height * 0.55,
-  borderRadius: 20,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 10 },
-  shadowOpacity: 0.2,
-  shadowRadius: 15,
-  elevation: 10,
-  },
-  emoji: {
-    fontSize: 120,
   },
   contentSection: {
     flex: 1,
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 12,
-    lineHeight: 38,
-  },
-  description: {
-    fontSize: 17,
-    lineHeight: 26,
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     marginBottom: 24,
   },
+  badgeText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: "800",
+    marginBottom: 16,
+    lineHeight: 42,
+  },
+  description: {
+    fontSize: 18,
+    lineHeight: 28,
+    marginBottom: 32,
+  },
   featureList: {
-    gap: 16,
+    gap: 12,
   },
   featureItem: {
     flexDirection: "row",
     alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
     gap: 12,
   },
-  featureIcon: {
-    fontSize: 24,
+  featureDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   featureText: {
     fontSize: 16,
     flex: 1,
     lineHeight: 22,
+    fontWeight: "500",
   },
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingBottom: 24,
   },
   pagination: {
     flexDirection: "row",
