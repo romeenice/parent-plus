@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.js
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
-import { useState, useCallback } from "react";
 
 
 import { useCurrentChild } from "../hooks/useCurrentChild";
@@ -65,7 +64,7 @@ export default function ProfileScreen({ navigation }) {
     (l) => l.code === selectedLanguage
   );
 
-  React.useEffect(() => {
+    useEffect(() => {
     const loadLanguage = async () => {
       try {
         if (!userId) return;
@@ -180,12 +179,12 @@ const handleSendHelp = async () => {
   }
 
   const handleAddChild = () => {
-    navigation.navigate("AddChild");
+    navigation.navigate("ManageChild");
   };
 
   const handleEditChild = (childToEdit) => {
     if (!childToEdit) return;
-    navigation.navigate("AddChild", {
+    navigation.navigate("ManageChild", {
       mode: "edit",
       childId: childToEdit.id,
       child: childToEdit,

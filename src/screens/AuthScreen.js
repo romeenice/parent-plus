@@ -20,6 +20,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import Constants from 'expo-constants';
+import { initRevenueCat } from "../services/revenueCat";
 
 import { auth, db } from "../services/firebaseConfig";
 import { useTheme } from "../theme/ThemeContext";
@@ -77,6 +78,7 @@ export default function AuthScreen() {
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
       const user = result.user;
+      await initRevenueCat(user.uid);
 
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -121,6 +123,7 @@ export default function AuthScreen() {
           password
         );
         const user = userCredential.user;
+        await initRevenueCat(user.uid);
 
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
@@ -131,8 +134,15 @@ export default function AuthScreen() {
           hasSeenOnboarding: false,
         });
       } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
-      }
+  const userCredential = await signInWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
+  const user = userCredential.user;
+
+  await initRevenueCat(user.uid);
+}
     } catch (error) {
       console.error("Auth error:", error);
       Alert.alert(t("error"), error.message);

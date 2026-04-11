@@ -9,8 +9,6 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebaseConfig";
 import { useTheme } from "../theme/ThemeContext";
 import { useTranslation } from "react-i18next";
 
@@ -22,9 +20,9 @@ const SLIDES = [
     titleKey: "onboarding_slide1_title",
     descriptionKey: "onboarding_slide1_description",
     features: [
-      { iconKey: "onboarding_feature1_articles" },
-      { iconKey: "onboarding_feature1_categories" },
-      { iconKey: "onboarding_feature1_languages" },
+      { textKey: "onboarding_slide1_feature1" },
+      { textKey: "onboarding_slide1_feature2" },
+      { textKey: "onboarding_slide1_feature3" },
     ],
   },
   {
@@ -32,9 +30,9 @@ const SLIDES = [
     titleKey: "onboarding_slide2_title",
     descriptionKey: "onboarding_slide2_description",
     features: [
-      { iconKey: "onboarding_feature2_reminders" },
-      { iconKey: "onboarding_feature2_checkups" },
-      { iconKey: "onboarding_feature2_milestones" },
+      { textKey: "onboarding_slide2_feature1" },
+      { textKey: "onboarding_slide2_feature2" },
+      { textKey: "onboarding_slide2_feature3" },
     ],
   },
   {
@@ -42,38 +40,49 @@ const SLIDES = [
     titleKey: "onboarding_slide3_title",
     descriptionKey: "onboarding_slide3_description",
     features: [
-      { iconKey: "onboarding_feature3_languages" },
-      { iconKey: "onboarding_feature3_themes" },
-      { iconKey: "onboarding_feature3_multiple_children" },
-      { iconKey: "onboarding_feature3_notifications" },
-      { iconKey: "onboarding_feature3_support" },
+      { textKey: "onboarding_slide3_feature1" },
+      { textKey: "onboarding_slide3_feature2" },
+      { textKey: "onboarding_slide3_feature3" },
+    ],
+  },
+  {
+    id: "4",
+    titleKey: "onboarding_slide4_title",
+    descriptionKey: "onboarding_slide4_description",
+    features: [
+      { textKey: "onboarding_slide4_feature1" },
+      { textKey: "onboarding_slide4_feature2" },
+      { textKey: "onboarding_slide4_feature3" },
+    ],
+  },
+  {
+    id: "5",
+    titleKey: "onboarding_slide5_title",
+    descriptionKey: "onboarding_slide5_description",
+    features: [
+      { textKey: "onboarding_slide5_feature1" },
+      { textKey: "onboarding_slide5_feature2" },
+      { textKey: "onboarding_slide5_feature3" },
+    ],
+  },
+  {
+    id: "6",
+    titleKey: "onboarding_slide6_title",
+    descriptionKey: "onboarding_slide6_description",
+    features: [
+      { textKey: "onboarding_slide6_feature1" },
+      { textKey: "onboarding_slide6_feature2" },
+      { textKey: "onboarding_slide6_feature3" },
+      { textKey: "onboarding_slide6_feature4" },
     ],
   },
 ];
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ navigation }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [finishing, setFinishing] = useState(false);
   const flatListRef = useRef(null);
-
-  const handleFinishOnboarding = async () => {
-    try {
-      setFinishing(true);
-      const user = auth.currentUser;
-      if (user) {
-        await setDoc(
-          doc(db, "users", user.uid),
-          { hasSeenOnboarding: true },
-          { merge: true }
-        );
-      }
-    } catch (error) {
-      console.error("Error finishing onboarding:", error);
-      setFinishing(false);
-    }
-  };
 
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
@@ -82,12 +91,12 @@ export default function OnboardingScreen() {
         animated: true,
       });
     } else {
-      handleFinishOnboarding();
+      navigation.replace("Paywall");
     }
   };
 
   const handleSkip = () => {
-    handleFinishOnboarding();
+    navigation.replace("Paywall");
   };
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
@@ -103,33 +112,37 @@ export default function OnboardingScreen() {
   const renderSlide = ({ item, index }) => (
     <View style={[styles.slide, { width }]}>
       <View style={styles.contentSection}>
-        {/* Number Badge */}
-        <View style={[styles.badge, { backgroundColor: `${theme.PRIMARY}20` }]}>
+        <View style={[styles.badge, { backgroundColor: `${theme.PRIMARY}18` }]}>
           <Text style={[styles.badgeText, { color: theme.PRIMARY }]}>
-            {index + 1} / 3
+            {index + 1} / 6
           </Text>
         </View>
 
-        {/* Title */}
         <Text style={[styles.title, { color: theme.TEXT }]}>
           {t(item.titleKey)}
         </Text>
 
-        {/* Description */}
         <Text style={[styles.description, { color: theme.SECONDARY }]}>
           {t(item.descriptionKey)}
         </Text>
 
-        {/* Feature List */}
         <View style={styles.featureList}>
           {item.features.map((feature, idx) => (
             <View
               key={idx}
-              style={[styles.featureItem, { backgroundColor: theme.CARD_BG }]}
+              style={[
+                styles.featureItem,
+                {
+                  backgroundColor: theme.CARD_BG,
+                  borderColor: theme.BORDER,
+                },
+              ]}
             >
-              <View style={[styles.featureDot, { backgroundColor: theme.PRIMARY }]} />
+              <View
+                style={[styles.featureDot, { backgroundColor: theme.PRIMARY }]}
+              />
               <Text style={[styles.featureText, { color: theme.TEXT }]}>
-                {t(feature.iconKey)}
+                {t(feature.textKey)}
               </Text>
             </View>
           ))}
@@ -143,16 +156,14 @@ export default function OnboardingScreen() {
       style={[styles.container, { backgroundColor: theme.BG }]}
       edges={["top", "bottom"]}
     >
-      {/* Header with Skip */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} disabled={finishing}>
+        <TouchableOpacity onPress={handleSkip}>
           <Text style={[styles.skipText, { color: theme.SECONDARY }]}>
             {t("onboarding_skip")}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -163,10 +174,8 @@ export default function OnboardingScreen() {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        scrollEnabled={!finishing}
       />
 
-      {/* Footer with Pagination and Button */}
       <View style={styles.footer}>
         <View style={styles.pagination}>
           {SLIDES.map((_, index) => (
@@ -177,7 +186,7 @@ export default function OnboardingScreen() {
                 {
                   backgroundColor:
                     index === currentIndex ? theme.PRIMARY : theme.BORDER,
-                  width: index === currentIndex ? 32 : 8,
+                  width: index === currentIndex ? 28 : 8,
                 },
               ]}
             />
@@ -187,13 +196,10 @@ export default function OnboardingScreen() {
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.PRIMARY }]}
           onPress={handleNext}
-          disabled={finishing}
         >
           <Text style={styles.buttonText}>
-            {finishing
-              ? t("common_loading")
-              : currentIndex === SLIDES.length - 1
-              ? t("onboarding_get_started")
+            {currentIndex === SLIDES.length - 1
+              ? t("onboarding_continue_to_paywall")
               : t("onboarding_next")}
           </Text>
         </TouchableOpacity>
@@ -211,7 +217,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   skipText: {
     fontSize: 16,
@@ -228,45 +234,47 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: "flex-start",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 24,
+    borderRadius: 999,
+    marginBottom: 20,
   },
   badgeText: {
     fontSize: 14,
     fontWeight: "700",
   },
   title: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: "800",
     marginBottom: 16,
-    lineHeight: 42,
+    lineHeight: 40,
   },
   description: {
     fontSize: 18,
     lineHeight: 28,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   featureList: {
     gap: 12,
   },
   featureItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 12,
+    borderWidth: 1,
   },
   featureDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 6,
   },
   featureText: {
     fontSize: 16,
     flex: 1,
-    lineHeight: 22,
+    lineHeight: 23,
     fontWeight: "500",
   },
   footer: {
@@ -286,7 +294,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 56,
-    borderRadius: 12,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },

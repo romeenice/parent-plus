@@ -323,7 +323,7 @@ export default function HomeScreen({ navigation }) {
         </Text>
         <TouchableOpacity
           style={{ marginTop: 16 }}
-          onPress={() => navigation.navigate("AddChild")}
+          onPress={() => navigation.navigate("ManageChild")}
         >
           <Text style={{ color: theme.PRIMARY, fontWeight: "700" }}>
             {t("home_add_first_child_button")}

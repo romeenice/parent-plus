@@ -84,15 +84,12 @@ export default function AddChildScreen({ navigation, route }) {
         createdAt: serverTimestamp(),
       });
 
-      // Set as current child in user document
       await setDoc(
         doc(db, "users", user.uid),
         { currentChildId: newChildDoc.id },
         { merge: true }
       );
 
-      // Navigate back only if we can (e.g., adding from Profile)
-      // Otherwise App.js will handle navigation automatically during onboarding
       if (navigation.canGoBack()) {
         navigation.goBack();
       }
